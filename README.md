@@ -21,7 +21,13 @@ The whole framework works around some main structures that abstract the data of
 the recordings: Signal, Phase and Experiment. A more detailed descriptions is
 present (at the moment) only in the source code.
 
+There are three main sections:
+
 ![](images/library_diagram.png)
+
+* Convert data into an experiment representation
+* Process and analyze an experiment
+* Produce an output for visualize the results
 
 ## Coding convections
 
