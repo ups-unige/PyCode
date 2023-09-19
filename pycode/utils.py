@@ -34,7 +34,8 @@ def data_in_intervals(
         start = i[0]
         end = i[1]
         ret.append(
-            (np.linspace(start, end, end - start + 1), data[start: end + 1]))
+            (np.linspace(start, end, end - start + 1),  # abscissa
+             data[start: end + 1]))                     # ordinate
     return ret
 
 
@@ -52,43 +53,55 @@ def intervals_boundaries(
              where the signal is positive.
     """
     ret = list()
+    # starting points of an interval are those where the first derivative is
+    # positive
     intervals_indices_start = np.where(np.gradient(data[:, 0]) > 0)[0]
+    # ending points of an interval are those where the first derivative is
+    # negative
     intervals_indices_ends = np.where(np.gradient(data[:, 0]) < 0)[0]
 
     for i, n in enumerate(intervals_indices_start):
         if sampling_freq is not None:
             ret.append(
+                # dividing by the sampling frequency gives the time value
                 (n / sampling_freq, intervals_indices_ends[i] / sampling_freq))
         else:
             ret.append((n, intervals_indices_ends[i]))
     return ret
 
 
-def accumulate_waves(
+def average_waves(
     signal: np.ndarray,
     digital: np.ndarray,
     guard: Tuple[float, float] = (0, 0),
-    max_waves=0
+    max_intervals=0
 ) -> np.ndarray:
     """
-    Join all the interval of SIGNAL where DIGITAL is positive escluding a
-    GUARD (measured in bins)
+    Average all the interval of SIGNAL where DIGITAL is positive escluding a
+    GUARD (measured in fraction)
     @param [in] signal: the signal to be spitted
     @param [in] digital: the signal used to decide the splitting intervals
-    @param [in] guard: a couple of value representing the number of bins to
-                       offset the intervals by
-    @returns a single array with all the intervals joined
+    @param [in] guard: a couple of value representing the fraction of the
+                       interval to use as a guard after start and end
+    @param [in] max_waves: no more than so many intervals
+    @returns a single array with the average of all the intervals
     """
     intervals = intervals_boundaries(digital)
-    if max_waves > 0:
-        intervals = intervals[:max_waves]
+    if max_intervals > 0:
+        intervals = intervals[:max_intervals]
+
     intervals_with_guard = []
     for i in intervals:
-        i_len = i[1] - i[0]
+        i_len = i[1] - i[0]  # total duration of the interval
         intervals_with_guard.append(
+            # add to the start and the end a fraction of the total duration of
+            # the interval
             (i[0] + guard[0] * i_len, i[1] + guard[1] * i_len))
+
     waves = data_in_intervals(signal, intervals_with_guard)
-    ret = np.zeros(shape=waves[0][1].shape)
+
+    ret = np.zeros(shape=waves[0][1].shape)  # accumulator variable
+
     for w in waves:
         shaper, shapew = ret.shape, w[1].shape
         if shapew[0] > shaper[0]:
@@ -96,6 +109,7 @@ def accumulate_waves(
         else:
             tmp = ret[: shapew[0]] + w[1]
         ret = tmp
+
     return ret / len(waves)
 
 
