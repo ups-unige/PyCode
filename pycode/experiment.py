@@ -1,7 +1,7 @@
 """PyCode experiment classes.
 
 Author: Mascelli Leonardo
-Last edited: 11-09-2023
+Last edited: 19-09-2023
 
 Here are contained the main structures that are used to contain the data
 recorded during the experiments.
