@@ -48,4 +48,5 @@ There are three main sections:
 
 ## Install
 
-TODO
+* TODO: add a way to append the library to the path where python interpreter
+        looks for them
