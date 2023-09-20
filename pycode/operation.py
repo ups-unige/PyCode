@@ -10,7 +10,7 @@ from matplotlib.axes import Axes
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 
-from .experiment import Experiment, Phase
+from .experiment import Experiment
 from .utils import intervals_boundaries, mea_60_electrode_list
 
 ###############################################################################
@@ -20,7 +20,8 @@ from .utils import intervals_boundaries, mea_60_electrode_list
 ###############################################################################
 
 
-def rasterplot(phase: Phase,
+def rasterplot(experiment: Experiment,
+               phase_index: int,
                ax: Axes,
                with_digital: bool = False) -> Axes:
     """
@@ -28,6 +29,8 @@ def rasterplot(phase: Phase,
     @param [in] phase
     @param [in] ax
     """
+
+    phase = experiment.phases[phase_index]
     electrodes = []
     spikes = []
 
@@ -59,7 +62,8 @@ def rasterplot(phase: Phase,
 #                                                                             #
 ###############################################################################
 
-def spikes_count(phase: Phase,
+def spikes_count(experiment: Experiment,
+                 phase_index: int,
                  interval: Optional[Tuple[float, float]] = None
                  ) -> List[Tuple[int, int]]:
     """
@@ -71,6 +75,7 @@ def spikes_count(phase: Phase,
     @returns a list with couple of (electrode number, spikes count)
     """
 
+    phase = experiment.phases[phase_index]
     ret = []
     if interval is not None:
         for electrode in phase.peaks.keys():
@@ -85,7 +90,7 @@ def spikes_count(phase: Phase,
 
 
 def mfr(experiment: Experiment,
-        phase: Phase,
+        phase_index: int,
         interval: Optional[Tuple[float, float]] = None,
         net=False) -> Union[List[Tuple[int, float]], float]:
     """
@@ -98,6 +103,8 @@ def mfr(experiment: Experiment,
     @param [in] net: if True it return the average of the channels
     @returns a list of the mfr of each channel or of the whole net
     """
+
+    phase = experiment.phases[phase_index]
     sc = spikes_count(phase, interval)
     if interval is not None:
         durate = interval[1] - interval[0]
@@ -119,7 +126,7 @@ def mfr(experiment: Experiment,
 
 
 def psth(experiment: Experiment,
-         phase: Phase,
+         phase_index: int,
          start: List[float],
          bin_size: float,
          bin_num: int,
@@ -134,6 +141,8 @@ def psth(experiment: Experiment,
     @param [in] net: if True average the psth on all channels
     @returns a list of the psth of each channel or of the whole net
     """
+
+    phase = experiment.phases[phase_index]
     active_els = mea_60_electrode_list(experiment.grounded_el)
     ret_map = {}
     for el in active_els:
@@ -167,7 +176,7 @@ def psth(experiment: Experiment,
 
 def instantaneous_firing_rate(
         experiment: Experiment,
-        phase: Phase,
+        phase_index: int,
         interval: Optional[Tuple[float, float]] = None) -> List[np.ndarray]:
     """
     Compute the instantaneous firing rate of a phase
@@ -177,6 +186,8 @@ def instantaneous_firing_rate(
                           phase
     @returns a list of the mfr of each channel or of the whole net
     """
+
+    phase = experiment.phases[phase_index]
     ret = []
     active_els = mea_60_electrode_list(experiment.grounded_el)
     for i in active_els:
@@ -200,15 +211,23 @@ def instantaneous_firing_rate(
 ###############################################################################
 
 # TODO respect the coding convenction of immutable objects
+# the way is probably through
+# from copy import deepcopy
+# and making deepcopy of experiment
 
-def set_intervals_to_zero(phase: Phase,
-                          intervals: List[Tuple[float, float]]) -> Experiment:
+def set_intervals_to_zero(
+        experiment: Experiment,
+        phase_index: int,
+        intervals: List[Tuple[float, float]]) -> Experiment:
     """
     Set to zero the selected intervals
     @param [in] phase
     @param [in] intervals: list of (start, end) of the intervals
     @returns a new experiment with the cleared intervals
     """
+
+    phase = experiment.phases[phase_index]
+
     els = phase.peaks.keys()
     for el in els:
         peaks = phase.peaks[el]
@@ -220,7 +239,8 @@ def set_intervals_to_zero(phase: Phase,
         phase.peaks[el] = peaks
 
 
-def clear_around_stimulation_boundaries(phase: Phase,
+def clear_around_stimulation_boundaries(experiment: Experiment,
+                                        phase_index: int,
                                         guard: float) -> Experiment:
     """
     Clear at the beginning and at the end of the stimulation phase around and
@@ -229,6 +249,8 @@ def clear_around_stimulation_boundaries(phase: Phase,
     @param [in] guard: duration (in seconds) of the guard
     @returns a new experiment with the cleared intervals
     """
+
+    phase = experiment.phases[phase_index]
 
     if phase.digital is not None:
         digital = phase.digital.data
