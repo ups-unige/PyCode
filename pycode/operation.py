@@ -1,8 +1,9 @@
 """This file contains a collection of operations to apply to the experiments
 Author: Mascelli Leonardo
-Last Edited: 19-09-2023
+Last Edited: 22-09-2023
 """
 
+from copy import deepcopy
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
@@ -27,7 +28,8 @@ def rasterplot(experiment: Experiment,
     """
     Draw the rasterplot of an experiment phase
     @param [in] phase
-    @param [in] ax
+    @param [in/out] ax
+    @returns the same ax passed as argument
     """
 
     phase = experiment.phases[phase_index]
@@ -226,7 +228,8 @@ def set_intervals_to_zero(
     @returns a new experiment with the cleared intervals
     """
 
-    phase = experiment.phases[phase_index]
+    experiment_ = deepcopy(experiment)
+    phase = experiment_.phases[phase_index]
 
     els = phase.peaks.keys()
     for el in els:
@@ -237,11 +240,12 @@ def set_intervals_to_zero(
                     peaks = peaks[peaks != peak]
                     break
         phase.peaks[el] = peaks
+    return experiment_
 
 
 def clear_around_stimulation_boundaries(experiment: Experiment,
                                         phase_index: int,
-                                        guard: float) -> Experiment:
+                                        guard: float) -> Optional[Experiment]:
     """
     Clear at the beginning and at the end of the stimulation phase around and
     guard
@@ -260,7 +264,6 @@ def clear_around_stimulation_boundaries(experiment: Experiment,
         for x0, x1 in stimuli:
             intervals.append((x0, x0 + guard))
             intervals.append((x1, x1 + guard))
-        set_intervals_to_zero(phase, intervals)
-
+        return set_intervals_to_zero(phase, intervals)
     else:
         assert False, "clearing around stimulation on a not stimulation phase"
