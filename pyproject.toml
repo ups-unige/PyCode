@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pycode_ups"
+version = "0.0.1"
+authors = [
+  { name="Mascelli Leonardo", email="lmascelli@gmail.com"},
+]
+description = "A simple framework for analyze MEA recordings"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/ups-unige/PyCode"
+"Bug Tracker" = "https://github.com/ups-unige/PyCode/issues"
