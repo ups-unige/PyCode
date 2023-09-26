@@ -12,7 +12,8 @@ function _Heading
 "@
 }
 
-function _Help {
+function _Help
+{
   Write-Host @"
 
 USAGE:
@@ -26,11 +27,24 @@ help          print this help
 "@
 }
 
+function _Build
+{
+  Push-Location ..
+  python -m build "PyCode"
+  Pop-Location
+}
+
 switch($args[0])
 {
 
-  "help" {
+  "help"
+  {
     _Help
+  }
+
+  "build"
+  {
+    _Build
   }
 
   default
