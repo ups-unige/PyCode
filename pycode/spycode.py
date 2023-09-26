@@ -38,8 +38,7 @@ PLACEHOLDERS:
 clear all; %#ok<CLALL>
 clc;
 library_path = %[0];
-addpath([library_path '/pycode/matlab/functions'])
-addpath([library_path '/pycode/matlab/classes'])
+addpath([library_path '/pycode/matlab/'])
 
 root_directory = %[1];
 options = make_experiment_options(root_directory);
