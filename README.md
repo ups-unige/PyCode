@@ -45,8 +45,3 @@ There are three main sections:
     exp2 = apply(exp, operation) # return a new experiment with the result of
                                  # the applied operation
   ```
-
-## Install
-
-* TODO: add a way to append the library to the path where python interpreter
-        looks for them

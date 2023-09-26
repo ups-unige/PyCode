@@ -21,7 +21,7 @@ USAGE:
 
 Available COMMANDs:
 
-test          run PyCode tests
+build         create PyCode package wheel
 help          print this help
 
 "@
