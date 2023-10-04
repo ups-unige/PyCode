@@ -1,3 +1,4 @@
-tests/34346/
+tests/34340/
+tests/.venv/
 .mypy_cache/
 dist/

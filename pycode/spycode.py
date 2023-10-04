@@ -76,6 +76,14 @@ class Path_Generator:
         self.root = root
         self.name = mcd_name[: mcd_name.rfind(".")]
 
+    def base_electrode_path(self, electrode_number: int) -> Path:
+        """
+        @returns the path of the .mat file of an electrode raw data as
+        recorded
+        """
+        return self.mat_folder().joinpath(self.name + '_' +
+                                          str(electrode_number))
+
     def matrix_name(self) -> str:
         """
         @returns the colture name/ID

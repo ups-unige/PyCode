@@ -8,7 +8,30 @@ This file contains some useful functions and constants for:
 """
 
 from typing import List, Optional, Tuple, Union
+
 import numpy as np
+
+###############################################################################
+#                                                                             #
+#                                   SIGNALS                                   #
+#                                                                             #
+###############################################################################
+
+
+class Signals_Differences:
+    """
+    This class is meant to be used to test if two signals are comparable and
+    to provide some quantitative informations on where they are or are not
+    """
+
+    def __init__(self, signal1: np.ndarray, signal2: np.ndarray):
+        """
+        @constructor Compute the differences between two signals
+        @param [in] signal1
+        @param [in] signal2
+        """
+        pass
+
 
 ###############################################################################
 #                                                                             #
