@@ -157,7 +157,7 @@ def mea_60_electrode_list(grounded: List[int] = []) -> List[int]:
     ret = ret + list(range(12, 18))
     for i in range(2, 8):
         ret = ret + list(range(i * 10 + 1, i * 10 + 9))
-    ret = ret + list(range(82, 87))
+    ret = ret + list(range(82, 88))
     for g in grounded:
         ret = ret.remove(g)  # type: ignore
     return ret
@@ -169,28 +169,192 @@ def mea_60_electrode_index_to_number(index: int) -> int:
     index (in the range 1-60). The electrode are supposed to be indexed from
     top to bottom and from left to right. Their labelling pattern is:
 
-              12 13 14 15 16 17                 1  2  3  4  5  6
-           21 22 23 24 25 26 27 28           7  8  9 10 11 12 13 14
-           31 32 33 34 35 36 37 38          15 16 17 18 19 20 21 22
-           41 42 43 44 45 46 47 48  <---->  23 24 25 26 27 28 29 30
-           51 52 53 54 55 56 57 58          31 32 33 34 35 36 37 38
-           61 62 63 64 65 66 67 68          39 40 41 42 43 44 45 46
-           71 72 73 74 75 76 77 78          47 48 49 50 51 52 53 54
-              82 83 84 85 86 87                55 56 57 58 59 60
+               1  2  3  4  5  6               12 13 14 15 16 17
+            7  8  9 10 11 12 13 14         21 22 23 24 25 26 27 28
+           15 16 17 18 19 20 21 22         31 32 33 34 35 36 37 38
+           23 24 25 26 27 28 29 30  <----> 41 42 43 44 45 46 47 48
+           31 32 33 34 35 36 37 38         51 52 53 54 55 56 57 58
+           39 40 41 42 43 44 45 46         61 62 63 64 65 66 67 68
+           47 48 49 50 51 52 53 54         71 72 73 74 75 76 77 78
+              55 56 57 58 59 60               82 83 84 85 86 87
     """
-    if not index > 0 and index < 61:
-        raise "Error: INDEX should be in range [1-60]"
+    if not (index > 0 and index < 61):
+        raise Exception("Error: INDEX should be in range [1-60]")
     if index <= 6:
         return 11 + index
     elif index <= 54:
         index = index - 6
-        return 17 + index // 8 * 10 + index % 8
+        return 20 + index // 8 * 10 + index % 8
     else:
         index = index - 54
         return 81 + index
 
 
 full_mea_60 = mea_60_electrode_list()
+MEA_INDEX_LABEL = {
+    0: 47,
+    1: 48,
+    2: 46,
+    3: 45,
+    4: 38,
+    5: 37,
+    6: 28,
+    7: 36,
+    8: 27,
+    9: 17,
+    10: 26,
+    11: 16,
+    12: 35,
+    13: 25,
+    14: 15,
+    15: 14,
+    16: 24,
+    17: 34,
+    18: 13,
+    19: 23,
+    20: 12,
+    21: 22,
+    22: 33,
+    23: 21,
+    24: 32,
+    25: 31,
+    26: 44,
+    27: 43,
+    28: 41,
+    29: 42,
+    30: 52,
+    31: 51,
+    32: 53,
+    33: 54,
+    34: 61,
+    35: 62,
+    36: 71,
+    37: 63,
+    38: 72,
+    39: 82,
+    40: 73,
+    41: 83,
+    42: 64,
+    43: 74,
+    44: 84,
+    45: 85,
+    46: 75,
+    47: 65,
+    48: 86,
+    49: 76,
+    50: 87,
+    51: 77,
+    52: 66,
+    53: 78,
+    54: 67,
+    55: 68,
+    56: 55,
+    57: 56,
+    58: 58,
+    59: 57,
+}
+
+
+def mea_60_electrode_index_to_label(index: int) -> int:
+    """
+    Return the corresponding electrode label (in the range 12-87) from an
+    index (in the range 0-59). Their labelling pattern is:
+
+               20 18 15 14 11  9               12 13 14 15 16 17
+            23 21 19 16 13 10  8  6         21 22 23 24 25 26 27 28
+            25 24 22 17 12  7  5  4         31 32 33 34 35 36 37 38
+            28 29 27 26  3  2  0  1  <----> 41 42 43 44 45 46 47 48
+            31 30 32 33 56 57 59 58         51 52 53 54 55 56 57 58
+            34 35 37 42 47 52 54 55         61 62 63 64 65 66 67 68
+            36 38 40 43 46 49 51 53         71 72 73 74 75 76 77 78
+               39 41 44 45 48 50               82 83 84 85 86 87
+    """
+    if not (index >= 0 and index < 60):
+        raise Exception("Error: INDEX should be in range [1-60]")
+    return MEA_INDEX_LABEL[index]
+
+
+MEA_LABEL_INDEX = {
+    47: 0,
+    48: 1,
+    46: 2,
+    45: 3,
+    38: 4,
+    37: 5,
+    28: 6,
+    36: 7,
+    27: 8,
+    17: 9,
+    26: 10,
+    16: 11,
+    35: 12,
+    25: 13,
+    15: 14,
+    14: 15,
+    24: 16,
+    34: 17,
+    13: 18,
+    23: 19,
+    12: 20,
+    22: 21,
+    33: 22,
+    21: 23,
+    32: 24,
+    31: 25,
+    44: 26,
+    43: 27,
+    41: 28,
+    42: 29,
+    52: 30,
+    51: 31,
+    53: 32,
+    54: 33,
+    61: 34,
+    62: 35,
+    71: 36,
+    63: 37,
+    72: 38,
+    82: 39,
+    73: 40,
+    83: 41,
+    64: 42,
+    74: 43,
+    84: 44,
+    85: 45,
+    75: 46,
+    65: 47,
+    86: 48,
+    76: 49,
+    87: 50,
+    77: 51,
+    66: 52,
+    78: 53,
+    67: 54,
+    68: 55,
+    55: 56,
+    56: 57,
+    58: 58,
+    57: 59,
+}
+
+
+def mea_60_electrode_label_to_index(label: int) -> int:
+    """
+    Return the corresponding index (in the range 0-59) from an electrode
+    label (in the range 12-87).
+
+              12 13 14 15 16 17                20 18 15 14 11  9   
+           21 22 23 24 25 26 27 28          23 21 19 16 13 10  8  6
+           31 32 33 34 35 36 37 38          25 24 22 17 12  7  5  4
+           41 42 43 44 45 46 47 48  <---->  28 29 27 26  3  2  0  1
+           51 52 53 54 55 56 57 58          31 30 32 33 56 57 59 58
+           61 62 63 64 65 66 67 68          34 35 37 42 47 52 54 55
+           71 72 73 74 75 76 77 78          36 38 40 43 46 49 51 53
+              82 83 84 85 86 87                39 41 44 45 48 50   
+    """
+    if label not in full_mea_60:
+        raise Exception("Error: LABELL should be a valide electrode number")
+    return MEA_LABEL_INDEX[label]
 
 
 def mea_60_electrode_number_to_index(number: int) -> int:
@@ -208,11 +372,11 @@ def mea_60_electrode_number_to_index(number: int) -> int:
               82 83 84 85 86 87                55 56 57 58 59 60
     """
     if number not in full_mea_60:
-        raise "Error: NUMBER should be a valide electrode number"
+        raise Exception("Error: NUMBER should be a valide electrode number")
 
     if number <= 17:
         return number-11
     elif number <= 78:
         return 6 + (number // 10 - 2) * 8 + number % 10
     else:
-        return 54 + number-78
+        return 54 + number-81

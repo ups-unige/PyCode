@@ -23,6 +23,7 @@ Available COMMANDs:
 
 build         create PyCode package wheel
 test          run tests
+venv          start testing environment
 help          print this help
 
 "@
@@ -59,6 +60,7 @@ function _Test
   pip uninstall --yes pycode
   pip install ./dist/pycode-0.0.1-py3-none-any.whl
   python tests/test.py
+  deactivate
 }
 
 switch($args[0])
@@ -77,6 +79,11 @@ switch($args[0])
   "test"
   {
     _Test
+  }
+
+  "venv"
+  {
+    Invoke-Expression "./tests/.venv/Scripts/Activate.ps1"
   }
 
   default

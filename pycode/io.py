@@ -7,16 +7,18 @@ This file contains a collection of functions for reading or writing the
 experiment structures to file.
 """
 
+from pathlib import Path
 from typing import Optional
 
-from .experiment import Experiment, Phase, Signal
-from pathlib import Path
-from scipy.io import loadmat
 import numpy as np
+from h5py import File
+from scipy.io import loadmat
 
+from .experiment import Experiment, Phase, Signal
 
 ###############################################################################
-# LOADING FROM MAT FILES
+# loading from mat files
+
 
 def load_signal_from_mat(filepath: Path, sampling_frequency=10000)\
         -> Optional[Signal]:
@@ -97,3 +99,15 @@ def load_experiment_from_mat(filename: Path) -> Experiment:
         assert False, e.args
 
     return Experiment(data["matrix_name"][0], data["path"][0], date, phases)
+
+
+###############################################################################
+# loading from hdf5 files
+
+
+def load_raw_signal_from_hdf5(filename: Path, electrode_label: int):
+    h5file = File(filename.absolute(), 'r')
+    # assume with digital
+    InfoChannel = h5file['/Data/Recording_0/AnalogStream/Stream_1/InfoChannel']
+    ChannelData = h5file['/Data/Recording_0/AnalogStream/Stream_1/ChannelData']
+    return (h5file, InfoChannel, ChannelData)
