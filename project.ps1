@@ -45,9 +45,9 @@ function _Test
   {
     _Build
   }
-  if (-not (Test-Path "./.venv"))
+  if (-not (Test-Path "./tests/.venv"))
   {
-    python -m venv .venv   
+    python -m venv ./tests/.venv   
   }
   if ($IsWindows)
   {
