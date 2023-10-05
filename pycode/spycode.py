@@ -82,7 +82,7 @@ class Path_Generator:
         recorded
         """
         return self.mat_folder().joinpath(self.name + '_' +
-                                          str(electrode_number))
+                                          str(electrode_number) + '.mat')
 
     def matrix_name(self) -> str:
         """
