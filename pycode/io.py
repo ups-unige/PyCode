@@ -120,7 +120,7 @@ def load_raw_signal_from_hdf5(filename: Path, electrode_label: int
     SCALING_FROM_VOLT_TO_MILLIVOLT = 6
     exponent = InfoChannel[electrode_index][7] + SCALING_FROM_VOLT_TO_MILLIVOLT
 
-    mantissas = ChannelData[electrode_index]
+    mantissas = np.expand_dims(ChannelData[electrode_index][:], 1)
 
     converted_data = (mantissas-np.ones(shape=mantissas.shape)*ADC_offset) *\
         conversion_factor * np.power(10., exponent)

@@ -2,12 +2,14 @@
 import unittest
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.io import loadmat
 
 from pycode.io import load_raw_signal_from_hdf5
 from pycode.spycode import Path_Generator
-from pycode.utils import (mea_60_electrode_index_to_label,
+from pycode.utils import (Signals_Differences, is_monodimensional, make_column,
+                          mea_60_electrode_index_to_label,
                           mea_60_electrode_label_to_index)
 
 
@@ -28,24 +30,47 @@ class TestMeaIndexConversions(unittest.TestCase):
         self.assertRaises(Exception, mea_60_electrode_index_to_label, 60)
 
 
-class TestSpycodeSimilarity(unittest.TestCase):
-    """Tests the similarity between SpyCode processing and the custom made."""
+class TestArratUtils(unittest.TestCase):
+    """Test the correctness of some array utility functions."""
 
+    def test_monodimensional_array_checks(self):
+        self.assertTrue(is_monodimensional(np.array([1, 2, 3])))
+        self.assertTrue(is_monodimensional(np.array([[1, 2, 3]])))
+        self.assertTrue(is_monodimensional(np.array([[1],
+                                                     [2],
+                                                     [3]])))
+        self.assertFalse(is_monodimensional(np.array([[1, 1],
+                                                      [2, 2],
+                                                      [3, 3]])))
+
+    def test_make_row(self):
+        self.assertTrue((make_column(
+            np.array([1, 2, 3])) == np.array([[1], [2], [3]])).all())
+        self.assertTrue((
+            make_column(np.array([[1], [2], [3]])) ==
+            np.array([[1], [2], [3]])).all())
+        self.assertTrue((make_column(
+            np.array([[1, 2, 3]])) == np.array([[1], [2], [3]])).all())
+
+
+def other_tests():
     BASE_FOLDER = Path('E:/PyCode/tests/34340/76/')
     H5_FILE = BASE_FOLDER.joinpath('34340_DIV43_100e_Stim_76.h5')
-    SPYCODE_CONVERTED_FOLDER = BASE_FOLDER.joinpath(
-        "34340_DIV43_100e_Stim_76/")
     ELECTRODE_NUMBER = 26  # random choise
 
-    def test_hdf5_converted_signals(self):
-        """Tests similatiry between signal converted with SpyCode and HDF5."""
-        # acquire the signal of an electrode
-        pg = Path_Generator(self.BASE_FOLDER, '34340_DIV43_100e_Stim_76.mcd')
-        matfile = loadmat(pg.base_electrode_path(self.ELECTRODE_NUMBER))
+    # acquire the signal of an electrode
+    pg = Path_Generator(BASE_FOLDER, '34340_DIV43_100e_Stim_76.mcd')
+    data_s = loadmat(pg.base_electrode_path(ELECTRODE_NUMBER))['data']
+    data_h = load_raw_signal_from_hdf5(H5_FILE, ELECTRODE_NUMBER)
 
-        print(matfile['data'].T)
-        print(load_raw_signal_from_hdf5(self.H5_FILE, self.ELECTRODE_NUMBER))
+    sd = Signals_Differences(data_s, data_h)
+    print(sd.max_err())
+    print(sd.norm())
+    sd.plot_signals()
+    plt.show()
 
 
 if __name__ == '__main__':
+
+    other_tests()
     unittest.main()

@@ -45,3 +45,6 @@ There are three main sections:
     exp2 = apply(exp, operation) # return a new experiment with the result of
                                  # the applied operation
   ```
+* Coerence in monodimensional arrays: monodimensional arrays are always
+  represented as column arrays (dimension [N, 1]) and transposed as column if 
+  needed.

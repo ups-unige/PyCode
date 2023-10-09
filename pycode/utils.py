@@ -1,4 +1,5 @@
-"""PyCode utility functions
+"""PyCode utility functions.
+
 Author: Mascelli Leonardo
 Last edited: 19-09-2023
 
@@ -9,6 +10,7 @@ This file contains some useful functions and constants for:
 
 from typing import List, Optional, Tuple, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 ###############################################################################
@@ -16,6 +18,29 @@ import numpy as np
 #                                   SIGNALS                                   #
 #                                                                             #
 ###############################################################################
+
+
+def is_monodimensional(array: np.ndarray) -> bool:
+    """
+    Check if an array shape is 1 everywhere apart from at max one position.
+
+    @param [in] array
+    @returns the array is monodimensional or not
+    """
+    shape = array.shape
+    dim_pos = np.where(shape == np.max(shape))[0]
+    for i in range(len(shape)):
+        if i != dim_pos and shape[i] != 1:
+            return False
+    return True
+
+
+def make_column(array: np.ndarray) -> np.ndarray:
+    assert is_monodimensional(
+        array), "Error: make_raw, ARRAY should be monodimensional"
+    size = np.max(array.shape)
+    ret = np.reshape(array, (size, 1))
+    return ret
 
 
 class Signals_Differences:
@@ -26,11 +51,39 @@ class Signals_Differences:
 
     def __init__(self, signal1: np.ndarray, signal2: np.ndarray):
         """
-        @constructor Compute the differences between two signals
+        Compute the differences between two monodimensional signals.
         @param [in] signal1
         @param [in] signal2
         """
-        pass
+
+        assert is_monodimensional(signal1) and is_monodimensional(signal2), \
+            "ERROR: input signals should be monodimensional"
+
+        self.same_shape = signal1.shape == signal2.shape
+        # store references of the signals as column arrays
+        self.signal1 = make_column(signal1)
+        self.signal2 = make_column(signal2)
+
+    def max_err(self) -> Tuple[float, float, float]:
+        mean_std = 0.5*np.std(self.signal1)+0.5*np.std(self.signal2)
+        max_diff = np.max(self.signal1[0, :] - self.signal2[0, :])
+        err_std = max_diff/mean_std
+        max_err_std = np.max(err_std)
+        max_err_s1 = max_diff/np.max(self.signal1)
+        max_err_s2 = max_diff/np.max(self.signal2)
+        return (max_err_std, max_err_s1, max_err_s2)
+
+    def norm(self) -> float:
+        diff_norm = np.sqrt(np.sum(np.power(self.signal1-self.signal2, 2)))
+        signal1_norm = np.sqrt(np.sum(np.power(self.signal1, 2)))
+        signal2_norm = np.sqrt(np.sum(np.power(self.signal2, 2)))
+        assert signal1_norm != 0 and signal2_norm != 0, \
+            "ERROR: Signals_Differences.norm signals should not be null"
+        return (diff_norm/(signal1_norm+signal2_norm))
+
+    def plot_signals(self):
+        plt.plot(self.signal1)
+        plt.plot(self.signal2)
 
 
 ###############################################################################
@@ -161,34 +214,6 @@ def mea_60_electrode_list(grounded: List[int] = []) -> List[int]:
     for g in grounded:
         ret = ret.remove(g)  # type: ignore
     return ret
-
-
-# keeped for some time but consider delete it
-# def mea_60_electrode_index_to_number(index: int) -> int:
-#     """
-#     Return the corresponding electrode number (in the range 12-87) from an
-#     index (in the range 1-60). The electrode are supposed to be indexed from
-#     top to bottom and from left to right. Their labelling pattern is:
-#
-#                1  2  3  4  5  6               12 13 14 15 16 17
-#             7  8  9 10 11 12 13 14         21 22 23 24 25 26 27 28
-#            15 16 17 18 19 20 21 22         31 32 33 34 35 36 37 38
-#            23 24 25 26 27 28 29 30  <----> 41 42 43 44 45 46 47 48
-#            31 32 33 34 35 36 37 38         51 52 53 54 55 56 57 58
-#            39 40 41 42 43 44 45 46         61 62 63 64 65 66 67 68
-#            47 48 49 50 51 52 53 54         71 72 73 74 75 76 77 78
-#               55 56 57 58 59 60               82 83 84 85 86 87
-#     """
-#     if not (index > 0 and index < 61):
-#         raise Exception("Error: INDEX should be in range [1-60]")
-#     if index <= 6:
-#         return 11 + index
-#     elif index <= 54:
-#         index = index - 6
-#         return 20 + index // 8 * 10 + index % 8
-#     else:
-#         index = index - 54
-#         return 81 + index
 
 
 full_mea_60 = mea_60_electrode_list()
@@ -344,41 +369,15 @@ def mea_60_electrode_label_to_index(label: int) -> int:
     Return the corresponding index (in the range 0-59) from an electrode
     label (in the range 12-87).
 
-              12 13 14 15 16 17                20 18 15 14 11  9   
+              12 13 14 15 16 17                20 18 15 14 11  9
            21 22 23 24 25 26 27 28          23 21 19 16 13 10  8  6
            31 32 33 34 35 36 37 38          25 24 22 17 12  7  5  4
            41 42 43 44 45 46 47 48  <---->  28 29 27 26  3  2  0  1
            51 52 53 54 55 56 57 58          31 30 32 33 56 57 59 58
            61 62 63 64 65 66 67 68          34 35 37 42 47 52 54 55
            71 72 73 74 75 76 77 78          36 38 40 43 46 49 51 53
-              82 83 84 85 86 87                39 41 44 45 48 50   
+              82 83 84 85 86 87                39 41 44 45 48 50
     """
     if label not in full_mea_60:
         raise Exception("Error: LABELL should be a valide electrode number")
     return MEA_LABEL_INDEX[label]
-
-
-# keeped for some time but consider delete it
-# def mea_60_electrode_number_to_index(number: int) -> int:
-#     """
-#     Return the corresponding index (in the range 1-60) from an electrode
-#     number (in the range 12-87).
-#
-#               12 13 14 15 16 17                 1  2  3  4  5  6
-#            21 22 23 24 25 26 27 28           7  8  9 10 11 12 13 14
-#            31 32 33 34 35 36 37 38          15 16 17 18 19 20 21 22
-#            41 42 43 44 45 46 47 48  <---->  23 24 25 26 27 28 29 30
-#            51 52 53 54 55 56 57 58          31 32 33 34 35 36 37 38
-#            61 62 63 64 65 66 67 68          39 40 41 42 43 44 45 46
-#            71 72 73 74 75 76 77 78          47 48 49 50 51 52 53 54
-#               82 83 84 85 86 87                55 56 57 58 59 60
-#     """
-#     if number not in full_mea_60:
-#         raise Exception("Error: NUMBER should be a valide electrode number")
-#
-#     if number <= 17:
-#         return number-11
-#     elif number <= 78:
-#         return 6 + (number // 10 - 2) * 8 + number % 10
-#     else:
-#         return 54 + number-81
