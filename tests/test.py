@@ -7,9 +7,9 @@ import numpy as np
 from scipy.io import loadmat
 
 from pycode.io import load_raw_signal_from_hdf5
-from pycode.operation import filter_signal
+from pycode.operation import compute_threshold, filter_signal
 from pycode.spycode import Path_Generator
-from pycode.utils import (Signals_Differences, is_monodimensional, make_column,
+from pycode.utils import (Signals_Differences, is_monodimensional, make_row,
                           mea_60_electrode_index_to_label,
                           mea_60_electrode_label_to_index)
 
@@ -45,58 +45,55 @@ class TestArratUtils(unittest.TestCase):
                                                       [3, 3]])))
 
     def test_make_row(self):
-        self.assertTrue((make_column(
-            np.array([1, 2, 3])) == np.array([[1], [2], [3]])).all())
+        self.assertTrue((make_row(
+            np.array([1, 2, 3])) == np.array([[1, 2, 3]])).all())
         self.assertTrue((
-            make_column(np.array([[1], [2], [3]])) ==
-            np.array([[1], [2], [3]])).all())
-        self.assertTrue((make_column(
-            np.array([[1, 2, 3]])) == np.array([[1], [2], [3]])).all())
+            make_row(np.array([[1], [2], [3]])) ==
+            np.array([[1, 2, 3]])).all())
+        self.assertTrue((make_row(
+            np.array([[1, 2, 3]])) == np.array([[1, 2, 3]])).all())
 
 
-def test_base_signal():
+class TestSpikeDetectionOperations(unittest.TestCase):
     BASE_FOLDER = Path('E:/PyCode/tests/34340/76/')
     H5_FILE = BASE_FOLDER.joinpath('34340_DIV43_100e_Stim_76.h5')
     ELECTRODE_NUMBER = 26  # random choise
 
-    # acquire the signal of an electrode
-    pg = Path_Generator(BASE_FOLDER, '34340_DIV43_100e_Stim_76.mcd')
-    data_s = loadmat(pg.base_electrode_path(ELECTRODE_NUMBER))['data']
-    data_h = load_raw_signal_from_hdf5(H5_FILE, ELECTRODE_NUMBER)
+    def test_base_signal(self):
+        # acquire the signal of an electrode
+        pg = Path_Generator(self.BASE_FOLDER, '34340_DIV43_100e_Stim_76.mcd')
+        data_s = loadmat(pg.base_electrode_path(self.ELECTRODE_NUMBER))['data']
+        data_h = load_raw_signal_from_hdf5(self.H5_FILE, self.ELECTRODE_NUMBER)
 
-    sd = Signals_Differences(data_s, data_h)
-    print(sd.max_err())
-    print(sd.norm())
-    sd.plot_signals()
+        sd = Signals_Differences(data_s, data_h)
+        # print(sd.max_err())
+        res = sd.norm()
+        print(f"base signal converted equivalence {res}")
+        # sd.plot_signals()
+        self.assertLess(res, 0.05)
 
+    def test_filtered_signal(self):
+        # acquire the signal of an electrode
+        pg = Path_Generator(self.BASE_FOLDER, '34340_DIV43_100e_Stim_76.mcd')
+        filtered_data_s = loadmat(
+            pg.filtered_electrode_path(self.ELECTRODE_NUMBER))['data']
+        data_h = make_row(
+            load_raw_signal_from_hdf5(self.H5_FILE, self.ELECTRODE_NUMBER))
+        filtered_data_h = filter_signal(data_h, 10000, 70)
 
-def test_filtered_signal():
-    BASE_FOLDER = Path('E:/PyCode/tests/34340/76/')
-    H5_FILE = BASE_FOLDER.joinpath('34340_DIV43_100e_Stim_76.h5')
-    ELECTRODE_NUMBER = 26  # random choise
+        sd = Signals_Differences(filtered_data_s, filtered_data_h)
+        res = sd.norm()
+        print(f"base signal filtered equivalence {res}")
+        # sd.plot_signals()
+        self.assertLess(res, 0.05)
 
-    # acquire the signal of an electrode
-    pg = Path_Generator(BASE_FOLDER, '34340_DIV43_100e_Stim_76.mcd')
-    data_s = loadmat(pg.base_electrode_path(ELECTRODE_NUMBER))['data']
-    filtered_data_s = loadmat(
-        pg.filtered_electrode_path(ELECTRODE_NUMBER))['data']
-    data_h = make_column(load_raw_signal_from_hdf5(H5_FILE, ELECTRODE_NUMBER))
-    filtered_data_h = filter_signal(data_s, 10000, 70)
-
-    plt.plot(filtered_data_s)
-    sd = Signals_Differences(filtered_data_s, filtered_data_h)
-    print(sd.max_err())
-    print(sd.norm())
-    sd.plot_signals()
-
-
-def other_tests():
-    # test_base_signal()
-    test_filtered_signal()
-    plt.show()
+    def test_spike_detection(self):
+        data_h = make_row(
+            load_raw_signal_from_hdf5(self.H5_FILE, self.ELECTRODE_NUMBER))
+        filtered_data_h = filter_signal(data_h, 10000, 70)
+        filtered_data_h = filtered_data_h - np.mean(filtered_data_h)
+        print(compute_threshold(filtered_data_h))
 
 
 if __name__ == '__main__':
-
-    other_tests()
-    unittest.main()
+    unittest.main(verbosity=1)

@@ -35,11 +35,11 @@ def is_monodimensional(array: np.ndarray) -> bool:
     return True
 
 
-def make_column(array: np.ndarray) -> np.ndarray:
+def make_row(array: np.ndarray) -> np.ndarray:
     assert is_monodimensional(
         array), "Error: make_raw, ARRAY should be monodimensional"
     size = np.max(array.shape)
-    ret = np.reshape(array, (size, 1))
+    ret = np.reshape(array, (1, size))
     return ret
 
 
@@ -61,8 +61,8 @@ class Signals_Differences:
 
         self.same_shape = signal1.shape == signal2.shape
         # store references of the signals as column arrays
-        self.signal1 = make_column(signal1)
-        self.signal2 = make_column(signal2)
+        self.signal1 = make_row(signal1)
+        self.signal2 = make_row(signal2)
 
     def max_err(self) -> Tuple[float, float, float]:
         mean_std = 0.5*np.std(self.signal1)+0.5*np.std(self.signal2)

@@ -15,7 +15,7 @@ from h5py import File
 from scipy.io import loadmat
 
 from .experiment import Experiment, Phase, Signal
-from .utils import mea_60_electrode_label_to_index
+from .utils import mea_60_electrode_label_to_index, make_row
 
 ###############################################################################
 # loading from mat files
@@ -124,4 +124,4 @@ def load_raw_signal_from_hdf5(filename: Path, electrode_label: int
 
     converted_data = (mantissas-np.ones(shape=mantissas.shape)*ADC_offset) *\
         conversion_factor * np.power(10., exponent)
-    return converted_data
+    return make_row(converted_data)

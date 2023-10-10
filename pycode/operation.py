@@ -13,7 +13,8 @@ from matplotlib.patches import Rectangle
 from scipy import signal
 
 from .experiment import Experiment
-from .utils import intervals_boundaries, mea_60_electrode_list
+from .utils import (intervals_boundaries, is_monodimensional,
+                    mea_60_electrode_list)
 
 ###############################################################################
 #                                                                             #
@@ -213,12 +214,68 @@ def instantaneous_firing_rate(
 #                                                                             #
 ###############################################################################
 
-
 def filter_signal(data: np.ndarray, sampling_frequency: float,
                   cutoff: float, btype: str = 'highpass') -> np.ndarray:
     Wn = cutoff/(0.5*sampling_frequency)
     b, a = signal.butter(2, Wn, btype=btype)
-    return signal.lfilter(b, a, data, axis=0)
+    return signal.lfilter(b, a, data)
+
+
+def compute_threshold(data: np.ndarray,
+                      sf: float = 10000,
+                      multCoeff: int = 8) -> float:
+    assert is_monodimensional(
+        data), "ERROR: compute_threshold. DATA should be monodimensional"
+    nSamples = np.max(data.shape)  # number of points in data
+    nWin = 30  # number of subdivision of the whole data
+    winDur = 200e-3  # duration of the window where to compute the threshold
+    winDur_samples = winDur*sf  # previous duration in samples
+    sample_starting_points = np.arange(
+        0, nSamples-1, np.round(nSamples/nWin), dtype=np.int32)
+    sample_ending_points = np.round(
+        sample_starting_points + np.int32(winDur_samples))
+    threshold = 100
+
+    for i_win in range(0, nWin):
+        win_data = data[0, sample_starting_points[i_win]:
+                        sample_ending_points[i_win]],
+        new_threshold = np.std(win_data)
+        if new_threshold > threshold:
+            threshold = new_threshold
+
+    return threshold*multCoeff
+
+
+def spike_detection():
+    """
+NOTE:
+    standard deviation coefficient: 8
+    peak lifetime period PLP: 2.0 ms
+    refractory period RP: 1.0 ms
+    artecfact threshold (analog): 1 mV
+    artefact threshold (electrode): 200 uV
+    maximum stimulation frequency: 50 Hz
+    sampling frequency: 10000 Hz
+
+    algorithm:
+        for each electrode:
+        1. data = loadmat(electrode_file)['data']
+        2. data = data - np.mean(data)
+        2. auto compute threshold (data, sf=10000, multCoeff=8)
+            1. nSamples = len(data)
+            2. nWin = 30
+            3. winDur = 200e-3;
+            4. winDur_samples = winDur*sf;
+            5. startSample = 1:(round(nSamples/nWin)):nSamples
+            6. endSample = startSample+winDur_samples-1;
+            7. th = 100;
+            8. for i in range(0, nWin):
+                thThis = np.std(data(startSample(i):endSample(i)))
+                if th > thThis:
+                    th = thThis
+            9. th = th*multCoeff
+    """
+
 
 # TODO respect the coding convenction of immutable objects
 # the way is probably through
