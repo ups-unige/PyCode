@@ -7,6 +7,7 @@ import numpy as np
 from scipy.io import loadmat
 
 from pycode.io import load_raw_signal_from_hdf5
+from pycode.operation import filter_signal
 from pycode.spycode import Path_Generator
 from pycode.utils import (Signals_Differences, is_monodimensional, make_column,
                           mea_60_electrode_index_to_label,
@@ -53,7 +54,7 @@ class TestArratUtils(unittest.TestCase):
             np.array([[1, 2, 3]])) == np.array([[1], [2], [3]])).all())
 
 
-def other_tests():
+def test_base_signal():
     BASE_FOLDER = Path('E:/PyCode/tests/34340/76/')
     H5_FILE = BASE_FOLDER.joinpath('34340_DIV43_100e_Stim_76.h5')
     ELECTRODE_NUMBER = 26  # random choise
@@ -67,6 +68,31 @@ def other_tests():
     print(sd.max_err())
     print(sd.norm())
     sd.plot_signals()
+
+
+def test_filtered_signal():
+    BASE_FOLDER = Path('E:/PyCode/tests/34340/76/')
+    H5_FILE = BASE_FOLDER.joinpath('34340_DIV43_100e_Stim_76.h5')
+    ELECTRODE_NUMBER = 26  # random choise
+
+    # acquire the signal of an electrode
+    pg = Path_Generator(BASE_FOLDER, '34340_DIV43_100e_Stim_76.mcd')
+    data_s = loadmat(pg.base_electrode_path(ELECTRODE_NUMBER))['data']
+    filtered_data_s = loadmat(
+        pg.filtered_electrode_path(ELECTRODE_NUMBER))['data']
+    data_h = make_column(load_raw_signal_from_hdf5(H5_FILE, ELECTRODE_NUMBER))
+    filtered_data_h = filter_signal(data_s, 10000, 70)
+
+    plt.plot(filtered_data_s)
+    sd = Signals_Differences(filtered_data_s, filtered_data_h)
+    print(sd.max_err())
+    print(sd.norm())
+    sd.plot_signals()
+
+
+def other_tests():
+    # test_base_signal()
+    test_filtered_signal()
     plt.show()
 
 

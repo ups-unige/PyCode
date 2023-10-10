@@ -10,6 +10,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
+from scipy import signal
 
 from .experiment import Experiment
 from .utils import intervals_boundaries, mea_60_electrode_list
@@ -212,10 +213,18 @@ def instantaneous_firing_rate(
 #                                                                             #
 ###############################################################################
 
+
+def filter_signal(data: np.ndarray, sampling_frequency: float,
+                  cutoff: float, btype: str = 'highpass') -> np.ndarray:
+    Wn = cutoff/(0.5*sampling_frequency)
+    b, a = signal.butter(2, Wn, btype=btype)
+    return signal.lfilter(b, a, data, axis=0)
+
 # TODO respect the coding convenction of immutable objects
 # the way is probably through
 # from copy import deepcopy
 # and making deepcopy of experiment
+
 
 def set_intervals_to_zero(
         experiment: Experiment,

@@ -79,11 +79,12 @@ class Signals_Differences:
         signal2_norm = np.sqrt(np.sum(np.power(self.signal2, 2)))
         assert signal1_norm != 0 and signal2_norm != 0, \
             "ERROR: Signals_Differences.norm signals should not be null"
-        return (diff_norm/(signal1_norm+signal2_norm))
+        return (2*diff_norm/(signal1_norm+signal2_norm))
 
     def plot_signals(self):
-        plt.plot(self.signal1)
-        plt.plot(self.signal2)
+        plt.plot(self.signal1, label="Signal 1")
+        plt.plot(self.signal2, label="Signal 2")
+        plt.legend()
 
 
 ###############################################################################

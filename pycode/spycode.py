@@ -78,11 +78,24 @@ class Path_Generator:
 
     def base_electrode_path(self, electrode_number: int) -> Path:
         """
+        @param [in] electrode_number
         @returns the path of the .mat file of an electrode raw data as
         recorded
         """
         return self.mat_folder().joinpath(self.name + '_' +
                                           str(electrode_number) + '.mat')
+
+    def filtered_electrode_path(self, electrode_number: int) -> Path:
+        """
+        @param [in] electrode_number
+        @returns the path of the .mat file of a filtered electrode raw data
+        """
+        return (self.filtered_folder()
+                .joinpath(f"{self.matrix_name()}_Mat_files")
+                .joinpath(self.name)
+                .joinpath(self.name + '_' +
+                          str(electrode_number) + '.mat')
+                )
 
     def matrix_name(self) -> str:
         """
@@ -102,6 +115,27 @@ class Path_Generator:
             .joinpath(f"{self.name}")
             .absolute()
         )
+
+    def filtered_folder(self) -> Path:
+        """
+        @returns the default path of the filtered folder for SpyCode
+        """
+        return (
+            self.root.joinpath(self.name)
+            .joinpath(self.matrix_name())
+            .joinpath(f"{self.matrix_name()}_Mat_files")
+            .joinpath(f"{self.matrix_name()}_FilteredData")
+            .absolute()
+        )
+
+    def peak_folder_name(self, plp: str = "2ms", rp: str = "1ms") -> str:
+        """
+        Generate the default name used by SpyCode for the peak folder
+        @param [in] plp: peak length period
+        @param [in] rp: refractary period
+        @returns name for the peak folder
+        """
+        return f"{self.matrix_name()}_PeakDetectionMAT_PLP{plp}_RP{rp}"
 
     def argument_convert(self) -> Path:
         """
@@ -155,25 +189,6 @@ class Path_Generator:
             .parent.joinpath(self.peak_folder_name())
             .absolute()
         )
-
-    def filtered_folder(self) -> Path:
-        """
-        @returns the default path of the filtered folder for SpyCode
-        """
-        return (
-            self.root.joinpath(f"{self.matrix_name()}_Mat_files")
-            .joinpath(f"{self.matrix_name()}_FilteredData")
-            .absolute()
-        )
-
-    def peak_folder_name(self, plp: str = "2ms", rp: str = "1ms") -> str:
-        """
-        Generate the default name used by SpyCode for the peak folder
-        @param [in] plp: peak length period
-        @param [in] rp: refractary period
-        @returns name for the peak folder
-        """
-        return f"{self.matrix_name()}_PeakDetectionMAT_PLP{plp}_RP{rp}"
 
 
 ###############################################################################
