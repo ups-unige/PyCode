@@ -140,29 +140,33 @@ def load_raw_signal_from_hdf5(filename: Path, electrode_index: int,
 def load_peaks_from_hdf5(data) -> Dict[int, np.ndarray]:
     InfoTimeStamp = data['/InfoTimeStamp']
 
-    # create a map { index: label }
+    indices = []
+    map: Dict[int, int] = {}
     for i in range(InfoTimeStamp.shape[0]):
         print(i)
+        # indices.append(index)
+        # map[index] = label
+
+    ret: Dict[int, np.ndarray] = {}
+
+    for index in indices:
+        label = map[index]
+        ret[label] = None  # TODO fill with peaks
+
+    return ret
 
 
-def load_digital_from_hdf5(data, notes: Optional[str]) -> Signal:
-    InfoChannel = data['/InfoChannel']
+def load_digital_from_hdf5(data, notes: Optional[str] = "") -> Signal:
+    InfoChannel = data['InfoChannel']
+    data_index = 0
     sampling_frequency: float = 1e6 / \
-        InfoChannel[9]  # TODO check correct index
-    placeholder_data_index = None  # TODO
+        InfoChannel[data_index][9]  # TODO check correct index
 
-    ChannelData = data['/ChannelData']
-    ADC_offset = InfoChannel[placeholder_data_index][8]
-    conversion_factor = InfoChannel[placeholder_data_index][10]
-    SCALING_FROM_VOLT_TO_MILLIVOLT = 6
-    exponent = InfoChannel[placeholder_data_index][7] + \
-        SCALING_FROM_VOLT_TO_MILLIVOLT
+    ChannelData = data['ChannelData']
+    signal_data = ChannelData[data_index]
+    signal_data -= np.min(signal_data)
 
-    mantissas = np.expand_dims(ChannelData[placeholder_data_index][:], 1)
-
-    converted_data = (mantissas-np.ones(shape=mantissas.shape)*ADC_offset) *\
-        conversion_factor * np.power(10., exponent)
-    return Signal(converted_data, sampling_frequency, notes)
+    return Signal(signal_data, sampling_frequency, notes)
 
 
 def load_phase_from_hdf5(filename: Path,
@@ -180,7 +184,7 @@ def load_phase_from_hdf5(filename: Path,
         raise Exception("info.digital is True but the phase does not contain"
                         " two Analog Streams")
     digital = load_digital_from_hdf5(
-        data['/AnalogStream/Stream_0/']) if info.digital else None
+        data['AnalogStream/Stream_0/']) if info.digital else None
 
     return Phase(info.name,
                  peaks=load_peaks_from_hdf5(

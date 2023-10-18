@@ -50,13 +50,13 @@ function _Build
   pip install -q build hatchling
   python -m build -n -w "PyCode"
   Pop-Location
+  pip uninstall --yes pycode
+  pip install -q ./dist/pycode-0.0.1-py3-none-any.whl
 }
 
 function _Test
 {
   _Venv
-  pip uninstall --yes pycode
-  pip install ./dist/pycode-0.0.1-py3-none-any.whl
   python tests/test.py
   deactivate
 }
