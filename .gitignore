@@ -1,4 +1,5 @@
-tests/34340/
-tests/.venv/
+.venv/
+tests/data/
 .mypy_cache/
 dist/
+Tools/

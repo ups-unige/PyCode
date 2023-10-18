@@ -46,16 +46,16 @@ function _Test
   {
     _Build
   }
-  if (-not (Test-Path "./tests/.venv"))
+  if (-not (Test-Path "./.venv"))
   {
     python -m venv ./tests/.venv   
   }
   if ($IsWindows)
   {
-    Invoke-Expression "./tests/.venv/Scripts/Activate.ps1" 
+    Invoke-Expression "./.venv/Scripts/Activate.ps1" 
   } else
   {
-    Invoke-Expression "./tests/.venv/bin/Activate.ps1" 
+    Invoke-Expression "./.venv/bin/Activate.ps1" 
   }
   pip uninstall --yes pycode
   pip install ./dist/pycode-0.0.1-py3-none-any.whl
@@ -83,7 +83,7 @@ switch($args[0])
 
   "venv"
   {
-    Invoke-Expression "./tests/.venv/Scripts/Activate.ps1"
+    Invoke-Expression "./.venv/Scripts/Activate.ps1"
   }
 
   default
