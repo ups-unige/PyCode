@@ -29,26 +29,10 @@ help          print this help
 "@
 }
 
-function _Build
-{
-  Push-Location ..
-  python -m build "PyCode"
-  Pop-Location
-}
-
-function _Test
-{
-  param(
-    [Boolean]$Build,
-    [Boolean]$JustStartVenv
-  )
-  if ($build)
-  {
-    _Build
-  }
+function _Venv {
   if (-not (Test-Path "./.venv"))
   {
-    python -m venv ./tests/.venv   
+    python -m venv ./.venv   
   }
   if ($IsWindows)
   {
@@ -57,6 +41,20 @@ function _Test
   {
     Invoke-Expression "./.venv/bin/Activate.ps1" 
   }
+}
+
+function _Build
+{
+  _Venv
+  Push-Location ..
+  pip install -q build hatchling
+  python -m build -n -w "PyCode"
+  Pop-Location
+}
+
+function _Test
+{
+  _Venv
   pip uninstall --yes pycode
   pip install ./dist/pycode-0.0.1-py3-none-any.whl
   python tests/test.py
@@ -83,7 +81,7 @@ switch($args[0])
 
   "venv"
   {
-    Invoke-Expression "./.venv/Scripts/Activate.ps1"
+    _Venv
   }
 
   default

@@ -1,7 +1,7 @@
 """PyCode input/output functions.
 
 Author: Mascelli Leonardo
-Last edited: 19-09-2023
+Last edited: 18-10-2023
 
 This file contains a collection of functions for reading or writing the
 experiment structures to file.
@@ -15,10 +15,14 @@ from h5py import File
 from scipy.io import loadmat
 
 from .experiment import Experiment, Phase, PhaseInfo, Signal
-from .utils import mea_60_electrode_label_to_index, make_row
+from .utils import make_row
+
 
 ###############################################################################
-# loading from mat files
+#
+#                       LOADING FROM MAT FILES
+#
+###############################################################################
 
 
 def load_signal_from_mat(filepath: Path, sampling_frequency=10000)\
@@ -103,7 +107,10 @@ def load_experiment_from_mat(filename: Path) -> Experiment:
 
 
 ###############################################################################
-# loading from hdf5 files
+#
+#                           LOADING FROM HDF5 FILES
+#
+###############################################################################
 
 
 def load_raw_signal_from_hdf5(filename: Path, electrode_index: int,
@@ -113,9 +120,11 @@ def load_raw_signal_from_hdf5(filename: Path, electrode_index: int,
     # TODO test Steam_N position if recording has no digital signal
     # n_streams = h5file['/Data/Recording_0/AnalogStream/'].shape
     last_stream = len(h5file['/Data/Recording_0/AnalogStream'].keys()) - 1
-    InfoChannel = h5file[f'/Data/Recording_0/AnalogStream/Stream_{last_stream}/InfoChannel']
+    InfoChannel = h5file['/Data/Recording_0/AnalogStream/'
+                         f'Stream_{last_stream}/InfoChannel']
     print(InfoChannel[electrode_index]) if debug else None
-    ChannelData = h5file[f'/Data/Recording_0/AnalogStream/Stream_{last_stream}/ChannelData']
+    ChannelData = h5file['/Data/Recording_0/AnalogStream/'
+                         'Stream_{last_stream}/ChannelData']
     ADC_offset = InfoChannel[electrode_index][8]
     conversion_factor = InfoChannel[electrode_index][10]
     SCALING_FROM_VOLT_TO_MILLIVOLT = 6
@@ -129,11 +138,31 @@ def load_raw_signal_from_hdf5(filename: Path, electrode_index: int,
 
 
 def load_peaks_from_hdf5(data) -> Dict[int, np.ndarray]:
-    pass
+    InfoTimeStamp = data['/InfoTimeStamp']
+
+    # create a map { index: label }
+    for i in range(InfoTimeStamp.shape[0]):
+        print(i)
 
 
-def load_digital_from_hdf5(data) -> Signal:
-    pass
+def load_digital_from_hdf5(data, notes: Optional[str]) -> Signal:
+    InfoChannel = data['/InfoChannel']
+    sampling_frequency: float = 1e6 / \
+        InfoChannel[9]  # TODO check correct index
+    placeholder_data_index = None  # TODO
+
+    ChannelData = data['/ChannelData']
+    ADC_offset = InfoChannel[placeholder_data_index][8]
+    conversion_factor = InfoChannel[placeholder_data_index][10]
+    SCALING_FROM_VOLT_TO_MILLIVOLT = 6
+    exponent = InfoChannel[placeholder_data_index][7] + \
+        SCALING_FROM_VOLT_TO_MILLIVOLT
+
+    mantissas = np.expand_dims(ChannelData[placeholder_data_index][:], 1)
+
+    converted_data = (mantissas-np.ones(shape=mantissas.shape)*ADC_offset) *\
+        conversion_factor * np.power(10., exponent)
+    return Signal(converted_data, sampling_frequency, notes)
 
 
 def load_phase_from_hdf5(filename: Path,
@@ -145,6 +174,11 @@ def load_phase_from_hdf5(filename: Path,
 
     stream_index = 1 if info.digital else 0
     data = File(filename)['/Data/Recording_0']
+
+    # checks if the data has a digital signal and the phase info too
+    if info.digital and len(data['/AnalogStream']) == 1:
+        raise Exception("info.digital is True but the phase does not contain"
+                        " two Analog Streams")
     digital = load_digital_from_hdf5(
         data['/AnalogStream/Stream_0/']) if info.digital else None
 
