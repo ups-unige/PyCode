@@ -1,5 +1,6 @@
 .venv/
 tests/data/
 .mypy_cache/
+pycode/__pycache__/
 dist/
 Tools/
