@@ -224,6 +224,19 @@ def filter_signal(data: np.ndarray, sampling_frequency: float,
 def compute_threshold(data: np.ndarray,
                       sf: float = 10000,
                       multCoeff: int = 8) -> float:
+    """
+    Automatically find a threshold for spike detection
+    @param [in] data: signal to process
+    @param [in] sf: sampling frequency
+    @param [in] multCoeff: how many std use as threshold
+    @returns the computed threshold
+
+    This algorithm has been taken from the SpyCode tool so the merit of it is
+    to be attribuite to its authors.
+    The algorithm splits the signal in NWIN parts and in each of those
+    computes the std in a period of 300ms and takes the smaller.
+    """
+
     assert is_monodimensional(
         data), "ERROR: compute_threshold. DATA should be monodimensional"
     nSamples = np.max(data.shape)  # number of points in data
@@ -233,20 +246,129 @@ def compute_threshold(data: np.ndarray,
     sample_starting_points = np.arange(
         0, nSamples-1, np.round(nSamples/nWin), dtype=np.int32)
     sample_ending_points = np.round(
-        sample_starting_points + np.int32(winDur_samples))
+        sample_starting_points + int(winDur_samples))
     threshold = 100
 
     for i_win in range(0, nWin):
         win_data = data[0, sample_starting_points[i_win]:
                         sample_ending_points[i_win]],
         new_threshold = np.std(win_data)
-        if new_threshold > threshold:
+        if new_threshold < threshold:
             threshold = new_threshold
 
     return threshold*multCoeff
 
 
-def spike_detection():
+def spike_detection_core(data: np.ndarray,
+                         threshold: float,
+                         peakDuration: float,
+                         refrTime: float,
+                         sampling_frequency: float) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    The core routine of the spikes detection.
+
+    @param [in] data: array where to look for peaks
+    @param [in] threshold
+    @param [in] peakDuration: in milliseconds
+    @param [in] refrTime: in milliseconds
+    @param [in] sampling_frequency: in Hz
+    @returns a tuple of arrays with peaks value and peaks time
+    """
+
+    assert is_monodimensional(
+        data), "ERROR: spike_detection_core. DATA should be monodimensional"
+
+    OVERLAP = 5
+    nSamples = np.max(data.shape)  # number of points in data
+    ret = (np.zeros(nSamples), np.zeros(nSamples))
+
+    # Convertion from milliseconds to number of samples
+    SCALING_MS_TO_S = 1/1000
+    peakDuration = np.round(peakDuration*SCALING_MS_TO_S*sampling_frequency)
+    refrTime = np.round(refrTime*SCALING_MS_TO_S*sampling_frequency)
+
+    newIndex = 1
+    indexPeak = 1
+    interval = 0.
+    sTimePeak = 0
+    eTimePeak = 0
+    sValuePeak = 0.
+    eValuePeak = 0.
+
+    for index in range(2, nSamples-1):
+        if index < newIndex:
+            continue
+
+        if (np.abs(data[0, index]) > np.abs(data[0, index-1])) and \
+                (np.abs(data[0, index]) >= np.abs(data[0, index+1])):
+            sTimePeak = index
+            sValuePeak = data[0, index]
+
+            if (index+peakDuration) > nSamples:
+                interval = nSamples - index
+            else:
+                interval = peakDuration
+
+            if sValuePeak > 0:
+                eTimePeak = index + 1
+                eValuePeak = sValuePeak
+
+                for i in range(index+1, int(index+interval)):
+                    if data[0, i] < eValuePeak:
+                        eTimePeak = i
+                        eValuePeak = data[0, i]
+                for i in range(index+1, int(eTimePeak)):
+                    if data[0, i] > sValuePeak:
+                        sTimePeak = i
+                        sValuePeak = data[0, i]
+
+                if eTimePeak == (index+interval) and \
+                        (index+interval+OVERLAP) < nSamples:
+                    for i in range(eTimePeak+1, int(index+interval+OVERLAP+1)):
+                        if data[0, i] < eValuePeak:
+                            eTimePeak = i
+                            eValuePeak = data[0, i]
+            else:
+                eTimePeak = index + 1
+                eValuePeak = sValuePeak
+
+                for i in range(index+1, int(index+interval)):
+                    if data[0, i] > eValuePeak:
+                        eTimePeak = i
+                        eValuePeak = data[0, i]
+                for i in range(index+1, eTimePeak):
+                    if data[0, i] < sValuePeak:
+                        sTimePeak = i
+                        sValuePeak = data[0, i]
+
+                if eTimePeak == (index+interval) and \
+                        (index+interval+OVERLAP) < nSamples:
+                    for i in range(eTimePeak+1, int(index+interval+OVERLAP+1)):
+                        if data[0, i] > eValuePeak:
+                            eTimePeak = i
+                            eValuePeak = data[0, i]
+
+            if np.abs(sValuePeak - eValuePeak) >= threshold:
+                ret[0][indexPeak] = np.abs(sValuePeak-eValuePeak)
+
+                if np.abs(sValuePeak) > np.abs(eValuePeak):
+                    ret[1][indexPeak] = sTimePeak
+                else:
+                    ret[1][indexPeak] = eTimePeak
+
+                if (ret[1][indexPeak]+refrTime) > eTimePeak and \
+                        (ret[1][indexPeak] + refrTime) < nSamples:
+                    newIndex = ret[1][indexPeak] + refrTime
+                else:
+                    newIndex = eTimePeak + 1
+
+                indexPeak = indexPeak + 1
+
+    return ret
+
+
+def spike_detection(data: np.ndarray) -> Tuple[np.ndarray,
+                                               np.ndarray]:
     """
 NOTE:
     standard deviation coefficient: 8
@@ -259,22 +381,15 @@ NOTE:
 
     algorithm:
         for each electrode:
-        1. data = loadmat(electrode_file)['data']
-        2. data = data - np.mean(data)
-        2. auto compute threshold (data, sf=10000, multCoeff=8)
-            1. nSamples = len(data)
-            2. nWin = 30
-            3. winDur = 200e-3;
-            4. winDur_samples = winDur*sf;
-            5. startSample = 1:(round(nSamples/nWin)):nSamples
-            6. endSample = startSample+winDur_samples-1;
-            7. th = 100;
-            8. for i in range(0, nWin):
-                thThis = np.std(data(startSample(i):endSample(i)))
-                if th > thThis:
-                    th = thThis
-            9. th = th*multCoeff
+        3. auto compute threshold (data, sf=10000, multCoeff=8)
     """
+    data_mean = np.mean(data, axis=1)
+    data = data-data_mean
+    return spike_detection_core(data,
+                                compute_threshold(data),
+                                2,
+                                1,
+                                10000)
 
 
 # TODO respect the coding convenction of immutable objects

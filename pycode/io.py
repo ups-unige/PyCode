@@ -8,13 +8,13 @@ experiment structures to file.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 from h5py import File
 from scipy.io import loadmat
 
-from .experiment import Experiment, Phase, Signal
+from .experiment import Experiment, Phase, PhaseInfo, Signal
 from .utils import mea_60_electrode_label_to_index, make_row
 
 ###############################################################################
@@ -106,15 +106,16 @@ def load_experiment_from_mat(filename: Path) -> Experiment:
 # loading from hdf5 files
 
 
-def load_raw_signal_from_hdf5(filename: Path, electrode_label: int
-                              ) -> np.ndarray:
+def load_raw_signal_from_hdf5(filename: Path, electrode_index: int,
+                              debug: bool = False) -> np.ndarray:
     h5file = File(filename.absolute(), 'r')
     # assume with digital
     # TODO test Steam_N position if recording has no digital signal
     # n_streams = h5file['/Data/Recording_0/AnalogStream/'].shape
-    InfoChannel = h5file['/Data/Recording_0/AnalogStream/Stream_1/InfoChannel']
-    ChannelData = h5file['/Data/Recording_0/AnalogStream/Stream_1/ChannelData']
-    electrode_index = mea_60_electrode_label_to_index(electrode_label)
+    last_stream = len(h5file['/Data/Recording_0/AnalogStream'].keys()) - 1
+    InfoChannel = h5file[f'/Data/Recording_0/AnalogStream/Stream_{last_stream}/InfoChannel']
+    print(InfoChannel[electrode_index]) if debug else None
+    ChannelData = h5file[f'/Data/Recording_0/AnalogStream/Stream_{last_stream}/ChannelData']
     ADC_offset = InfoChannel[electrode_index][8]
     conversion_factor = InfoChannel[electrode_index][10]
     SCALING_FROM_VOLT_TO_MILLIVOLT = 6
@@ -125,3 +126,33 @@ def load_raw_signal_from_hdf5(filename: Path, electrode_label: int
     converted_data = (mantissas-np.ones(shape=mantissas.shape)*ADC_offset) *\
         conversion_factor * np.power(10., exponent)
     return make_row(converted_data)
+
+
+def load_peaks_from_hdf5(data) -> Dict[int, np.ndarray]:
+    pass
+
+
+def load_digital_from_hdf5(data) -> Signal:
+    pass
+
+
+def load_phase_from_hdf5(filename: Path,
+                         info: Optional[PhaseInfo]) -> Phase:
+    if info is not None:
+        pass
+    else:
+        info = PhaseInfo.default_parse(filename)
+
+    stream_index = 1 if info.digital else 0
+    data = File(filename)['/Data/Recording_0']
+    digital = load_digital_from_hdf5(
+        data['/AnalogStream/Stream_0/']) if info.digital else None
+
+    return Phase(info.name,
+                 peaks=load_peaks_from_hdf5(
+                     data[f'/TimeStampStream/Stream_{stream_index}']),
+                 digital=digital,
+                 sampling_frequency=info.sampling_frequency,
+                 durate=info.durate,
+                 notes=info.notes,
+                 )

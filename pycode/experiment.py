@@ -30,6 +30,19 @@ class Signal:
         self.path = path
 
 
+class PhaseInfo:  # just for the linter complains
+    pass
+
+
+class PhaseInfo:
+    """
+    Collection of information about an experiment phase. Useful for conversion.
+    """
+
+    def default_parse(filename: Path) -> PhaseInfo:
+        pass
+
+
 class Phase:
     """
     The Phase class hold the informations about a single registration, that

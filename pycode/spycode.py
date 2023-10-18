@@ -91,10 +91,20 @@ class Path_Generator:
         @returns the path of the .mat file of a filtered electrode raw data
         """
         return (self.filtered_folder()
-                .joinpath(f"{self.matrix_name()}_Mat_files")
+                .joinpath(f"{self.matrix_name()}_mat_files")
                 .joinpath(self.name)
                 .joinpath(self.name + '_' +
                           str(electrode_number) + '.mat')
+                )
+
+    def peaks_electrode_path(self, electrode_number: int) -> Path:
+        """
+        @param [in] electrode_number
+        @returns the path of the .mat file of a detected peaks train
+        """
+        return (self.filtered_folder()
+                .joinpath(self.peak_folder_name())
+                .joinpath(f"ptrain_{self.name}_{electrode_number}.mat")
                 )
 
     def matrix_name(self) -> str:

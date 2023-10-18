@@ -82,8 +82,8 @@ class Signals_Differences:
         return (2*diff_norm/(signal1_norm+signal2_norm))
 
     def plot_signals(self):
-        plt.plot(self.signal1, label="Signal 1")
-        plt.plot(self.signal2, label="Signal 2")
+        plt.plot(self.signal1.T, label="Signal 1")
+        plt.plot(self.signal2.T, label="Signal 2")
         plt.legend()
 
 
