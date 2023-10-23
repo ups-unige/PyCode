@@ -1,6 +1,6 @@
-.venv/
-tests/data/
 .mypy_cache/
-pycode/__pycache__/
+.venv/
 dist/
+pycode/__pycache__/
+tests/data/
 Tools/

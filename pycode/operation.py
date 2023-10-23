@@ -231,8 +231,9 @@ def compute_threshold(data: np.ndarray,
     @param [in] multCoeff: how many std use as threshold
     @returns the computed threshold
 
-    This algorithm has been taken from the SpyCode tool so the merit of it is
-    to be attribuite to its authors.
+    This algorithm as well as the spike_detection_core one have been
+    taken from the SpyCode tool so the merit of it is to be attribuite
+    to its authors.
     The algorithm splits the signal in NWIN parts and in each of those
     computes the std in a period of 300ms and takes the smaller.
     """
@@ -263,7 +264,8 @@ def spike_detection_core(data: np.ndarray,
                          threshold: float,
                          peakDuration: float,
                          refrTime: float,
-                         sampling_frequency: float) -> Tuple[np.ndarray, np.ndarray]:
+                         sampling_frequency: float
+                         ) -> Tuple[np.ndarray, np.ndarray]:
     """
     The core routine of the spikes detection.
 
