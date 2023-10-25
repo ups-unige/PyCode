@@ -1,14 +1,14 @@
 """PyCode input/output functions.
 
 Author: Mascelli Leonardo
-Last edited: 18-10-2023
+Last edited: 23-10-2023
 
 This file contains a collection of functions for reading or writing the
 experiment structures to file.
 """
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 from h5py import File
@@ -115,29 +115,50 @@ def load_experiment_from_mat(filename: Path) -> Experiment:
 
 def load_raw_signal_from_hdf5(filename: Path, electrode_index: int,
                               debug: bool = False) -> np.ndarray:
+    """
+    Load and convert a raw signal acquired with Multichannel Systems
+    instrumentation.
+    @param [in] filename: the path of the raw file
+    @param [in] electrode_index: the index of the electrode
+    TODO convert it into the label of the electrode
+    @param [in] debug: debug flag (prints the InfoChannel fields if True)
+    @returns an array with the recorded voltages values
+    """
+
     h5file = File(filename.absolute(), 'r')
-    # assume with digital
-    # TODO test Steam_N position if recording has no digital signal
-    # n_streams = h5file['/Data/Recording_0/AnalogStream/'].shape
+
+    # get the last stream if the AnalogStream level, the previous ones may be
+    # some recorded trigger events
     last_stream = len(h5file['/Data/Recording_0/AnalogStream'].keys()) - 1
-    InfoChannel = h5file['/Data/Recording_0/AnalogStream/'
-                         f'Stream_{last_stream}/InfoChannel']
+
+    InfoChannel = h5file[('/Data/Recording_0/AnalogStream/'
+                         f'Stream_{last_stream}/InfoChannel')]
     print(InfoChannel[electrode_index]) if debug else None
-    ChannelData = h5file['/Data/Recording_0/AnalogStream/'
-                         'Stream_{last_stream}/ChannelData']
+
+    ChannelData = h5file[('/Data/Recording_0/AnalogStream/'
+                         f'Stream_{last_stream}/ChannelData')]
+
+    # here all the parameter for converting the ADC values to the actual
+    # voltage are got from the InfoChannel struct
     ADC_offset = InfoChannel[electrode_index][8]
     conversion_factor = InfoChannel[electrode_index][10]
     SCALING_FROM_VOLT_TO_MILLIVOLT = 6
     exponent = InfoChannel[electrode_index][7] + SCALING_FROM_VOLT_TO_MILLIVOLT
-
     mantissas = np.expand_dims(ChannelData[electrode_index][:], 1)
 
     converted_data = (mantissas-np.ones(shape=mantissas.shape)*ADC_offset) *\
         conversion_factor * np.power(10., exponent)
+
     return make_row(converted_data)
 
 
 def load_peaks_from_hdf5(data) -> Dict[int, np.ndarray]:
+    """
+    Load the peaks event times for each electrode
+    Meant to be used only from load_phase_from_hdf5 function
+    @param [in] data: the HDF5 data struct
+    @returns a map {electrode_index -> array of times}
+    """
     InfoTimeStamp = data['/InfoTimeStamp']
 
     indices = []
@@ -157,6 +178,14 @@ def load_peaks_from_hdf5(data) -> Dict[int, np.ndarray]:
 
 
 def load_digital_from_hdf5(data, notes: Optional[str] = "") -> Signal:
+    """
+    Extract the digital signal from an hdf5 file.
+    Meant to be used only from load_phase_from_hdf5 function
+    @param [in] data: the HDF5 data struct
+    @param [in] notes
+    @returns the digital Signal
+    """
+
     InfoChannel = data['InfoChannel']
     data_index = 0
     sampling_frequency: float = 1e6 / \
@@ -170,27 +199,85 @@ def load_digital_from_hdf5(data, notes: Optional[str] = "") -> Signal:
 
 
 def load_phase_from_hdf5(filename: Path,
-                         info: Optional[PhaseInfo]) -> Phase:
+                         info: Optional[PhaseInfo] = None) -> Phase:
+    """
+    Build a Phase instance from an HDF5 file and some metadata.
+    @param [in] filename: the path of the HDF5 file
+    @param [in] info: a custom PhaseInfo if the name of the file does not
+                      respect the name convention (see the documentation of
+                      PhaseInfo for the details. This, however does not
+                      prevent from using the default parsing and adding
+                      information to it.
+    @returns a Phase instance
+
+    An example of customizing the default parsing could be:
+
+    filename = Path(phase_file)
+    info = PhaseInfo().default_parse(filename)
+    info.digital_notes("Some notes")
+    phase = load_phase_from_hdf5(filename, info)
+    """
+
     if info is not None:
         pass
     else:
-        info = PhaseInfo.default_parse(filename)
+        info = PhaseInfo().default_parse(filename)
 
+    # it's assumed that there is only a digital signal
     stream_index = 1 if info.digital else 0
+
     data = File(filename)['/Data/Recording_0']
 
     # checks if the data has a digital signal and the phase info too
-    if info.digital and len(data['/AnalogStream']) == 1:
+    if info.digital and len(data['AnalogStream']) == 1:
         raise Exception("info.digital is True but the phase does not contain"
                         " two Analog Streams")
     digital = load_digital_from_hdf5(
-        data['AnalogStream/Stream_0/']) if info.digital else None
+        data['AnalogStream/Stream_0/'], info.digital_notes) if info.digital\
+        else None
+
+    # TODO check with an actual experiment signal
+    print(data.keys())
+    return
 
     return Phase(info.name,
                  peaks=load_peaks_from_hdf5(
-                     data[f'/TimeStampStream/Stream_{stream_index}']),
+                     data[f'TimeStampStream/Stream_{stream_index}']),
                  digital=digital,
                  sampling_frequency=info.sampling_frequency,
                  durate=info.durate,
                  notes=info.notes,
                  )
+
+
+def load_experiment_from_hdf5_files(path_list: List[Path],
+                                    info_list: Optional[Dict[Path, PhaseInfo]]
+                                    = None) -> Experiment:
+    """
+    Build an experiment instance from a list of files that contain its phases.
+    @param [in] path_list: list of path of the phases files
+    @param [in] info_list: map from a file path to it's phase's info
+    @returns the converted experiment
+
+    A possible usage is to get all h5 files from a directory and, if the names
+    respect the naming convention, let the default parse get the metadata:
+
+    from os import listdir
+    from pathlib import Path
+
+    path_list = []
+    files = listdir(phases_path)
+    for file in files:
+        if file.ends_with('.h5'):
+            path_list.append(Path(file))
+    exp = load_experiment_from_hdf5_files(path_list)
+    """
+
+    phases = []
+    for path in path_list:
+        if not path.exists():
+            raise (f'ERROR: load_experiment_from_hdf5_files. Some {path} does'
+                   'not exists')
+        phases.append(load_phase_from_hdf5(
+            path,
+            info_list[Path] if info_list is not None else None))

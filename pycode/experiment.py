@@ -1,7 +1,7 @@
 """PyCode experiment classes.
 
 Author: Mascelli Leonardo
-Last edited: 19-09-2023
+Last edited: 23-10-2023
 
 Here are contained the main structures that are used to contain the data
 recorded during the experiments.
@@ -39,8 +39,38 @@ class PhaseInfo:
     Collection of information about an experiment phase. Useful for conversion.
     """
 
-    def default_parse(filename: Path) -> PhaseInfo:
-        pass
+    def __init__(self):
+        self.digital_notes = None
+
+    def default_parse(self, filename: Path) -> PhaseInfo:
+        """
+        This method if where the naming convenction of the mcd ror h5 files is
+        used for generate the metadata of the phase.
+
+        the name must be in the form:
+
+        [COLTURE-ID]_DIV[DAY-IN-VITRO]_[PHASE-TYPE]_[PHASE-ORDER]_[OTHER].extension
+
+        !!! IF YOU WANT THE METADATA AUTOMATICALLY COMPUTED YOU MUST RESPECT
+        THIS CONVENCTION, OTHERWISE YOU MUST SUPPLY THE METADATA MANUALLY OR
+        CHANGE/OVERRIDE THIS FUNCTION TO ADAPT TO YOUR CONVENCTION !!!
+        """
+        try:
+            arg_list = filename.name[:filename.name.rfind('.')].split(sep="_")
+            self.name = arg_list[0]
+            self.div = int(arg_list[1][arg_list[1].find("DIV") + 3:])
+            phase_type_label = arg_list[2]
+            self.digital = phase_type_label.upper() == "STIM"
+            self.order = int(arg_list[3])
+            self.other = None
+            if len(arg_list) > 4:
+                self.other = arg_list[4]
+        except Exception as e:
+            print(f"ERROR: PhaseInfo.default_parse. {e.args}")
+        return self
+
+    def add_digital_notes(self, notes: str):
+        self.digital_notes = notes
 
 
 class Phase:
