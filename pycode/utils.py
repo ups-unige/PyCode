@@ -43,6 +43,33 @@ def make_row(array: np.ndarray) -> np.ndarray:
     return ret
 
 
+def make_fake_digital(total_duration: float, on_period: float,
+                      off_period: float, start_offset_duration: float = 0,
+                      sampling_frequency: float = 10e3) -> np.ndarray:
+    """
+    Create a fake signal with the features of a stimulation signal and values
+    only 0 or 1.
+    @param [in] total_duration
+    @param [in] on_period
+    @param [in] off_period
+    @param [in] start_offset_duration
+    @param [in] sampling_frequency
+    @returns the digital signal
+    """
+
+    total_period = on_period + off_period
+    on_samples = int(np.floor(on_period * sampling_frequency))
+    ret = np.zeros(shape=(1, int(np.ceil(total_duration*sampling_frequency))))
+    N = int(np.round((total_duration-start_offset_duration) / total_period))
+
+    for i in range(0, N):
+        start = int(np.floor((start_offset_duration+i*total_period)
+                             * sampling_frequency))
+        end = start + on_samples
+        ret[0, start:end] = 1
+    return ret
+
+
 class Signals_Differences:
     """
     This class is meant to be used to test if two signals are comparable and

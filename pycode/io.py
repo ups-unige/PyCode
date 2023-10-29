@@ -159,20 +159,22 @@ def load_peaks_from_hdf5(data) -> Dict[int, np.ndarray]:
     @param [in] data: the HDF5 data struct
     @returns a map {electrode_index -> array of times}
     """
-    InfoTimeStamp = data['/InfoTimeStamp']
+    InfoTimeStamp = data['InfoTimeStamp']
 
     indices = []
     map: Dict[int, int] = {}
-    for i in range(InfoTimeStamp.shape[0]):
-        print(i)
-        # indices.append(index)
-        # map[index] = label
+    # here we construct a map from the position of an electrode in the array
+    # and its actual name (label)
+    for el in InfoTimeStamp[:]:
+        indices.append(el[0])
+        map[el[0]] = el[2]
 
     ret: Dict[int, np.ndarray] = {}
 
-    for index in indices:
-        label = map[index]
-        ret[label] = None  # TODO fill with peaks
+    for entry in data.keys():
+        if entry.startswith('TimeStampEntity_'):
+            index = int(entry[16:])
+            ret[map[index]] = np.array(data[f'TimeStampEntity_{index}'])
 
     return ret
 
@@ -223,9 +225,6 @@ def load_phase_from_hdf5(filename: Path,
     else:
         info = PhaseInfo().default_parse(filename)
 
-    # it's assumed that there is only a digital signal
-    stream_index = 1 if info.digital else 0
-
     data = File(filename)['/Data/Recording_0']
 
     # checks if the data has a digital signal and the phase info too
@@ -236,16 +235,12 @@ def load_phase_from_hdf5(filename: Path,
         data['AnalogStream/Stream_0/'], info.digital_notes) if info.digital\
         else None
 
-    # TODO check with an actual experiment signal
-    print(data.keys())
-    return
-
     return Phase(info.name,
                  peaks=load_peaks_from_hdf5(
-                     data[f'TimeStampStream/Stream_{stream_index}']),
+                     data['TimeStampStream/Stream_0']),
                  digital=digital,
                  sampling_frequency=info.sampling_frequency,
-                 durate=info.durate,
+                 durate=0,  # info.durate, # TODO compute durate from hdf5
                  notes=info.notes,
                  )
 

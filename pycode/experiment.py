@@ -40,7 +40,9 @@ class PhaseInfo:
     """
 
     def __init__(self):
+        self.sampling_frequency = 10000.
         self.digital_notes = None
+        self.notes = None
 
     def default_parse(self, filename: Path) -> PhaseInfo:
         """
@@ -71,6 +73,12 @@ class PhaseInfo:
 
     def add_digital_notes(self, notes: str):
         self.digital_notes = notes
+
+    def add_notes(self, notes: str):
+        self.notes = notes
+
+    def set_sampling_frequency(self, sampling_frequency: float):
+        self.sampling_frequency = sampling_frequency
 
 
 class Phase:
@@ -110,34 +118,9 @@ class Phase:
         self.order: Optional[int] = None
         self.rest: str = ""
         self.notes = notes
-        self.parse_phase()
 
     def to_dict(self) -> Dict[str, Any]:
         return self.__dict__()
-
-    def parse_metadata(self):
-        """
-        This method if where the naming convenction of the mcd files is used
-        for generate the metadata of the phase.
-
-        the name must be in the form:
-
-        [COLTURE-ID]_DIV[DAY-IN-VITRO]_[PHASE-TYPE]_[PHASE-ORDER]_[OTHER].mcd
-
-        !!! IF YOU WANT THE METADATA AUTOMATICALLY COMPUTED YOU MUST RESPECT
-        THIS CONVENCTION, OTHERWISE YOU MUST SUPPLY THE METADATA MANUALLY OR
-        CHANGE THIS FUNCTION TO ADAPT TO YOUR CONVENCTION !!!
-        """
-        try:
-            arg_list = self.name.split(sep="_")
-            self.div = int(arg_list[1][arg_list[1].find("DIV") + 3:])
-            self.phase_type = arg_list[2]
-            self.order = int(arg_list[3])
-            self.other = None
-            if len(arg_list) > 4:
-                self.other = arg_list[4]
-        except Exception as e:
-            print(f"Error parsing phase: {self.name} : {e.args}")
 
     def __dict__(self):
         ret = {
