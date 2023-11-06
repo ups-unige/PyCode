@@ -12,7 +12,7 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 from scipy import signal
 
-from .experiment import Experiment
+from .experiment import Experiment, Phase
 from .utils import (intervals_boundaries, is_monodimensional,
                     mea_60_electrode_list)
 
@@ -35,6 +35,41 @@ def rasterplot(experiment: Experiment,
     """
 
     phase = experiment.phases[phase_index]
+    electrodes = []
+    spikes = []
+
+    # peaks.keys() are the electrodes numbers
+    for _, p in enumerate(phase.peaks.keys()):
+        electrodes.append(p)
+        spikes.append(phase.peaks[p][:])
+
+    digital = phase.digital
+    if digital is not None and with_digital:
+        stim_intervals = intervals_boundaries(digital.data,
+                                              digital.sampling_frequency)
+        stim_rectangles = [
+            Rectangle((x[0], 0), x[1] - x[0], 60) for x in stim_intervals
+        ]
+        patches = PatchCollection(
+            stim_rectangles, facecolor="r", alpha=0.1, edgecolor="none"
+        )
+        # draw a collection of rettangles with 0.1 opacity to represent the
+        # time where stimulus where active
+        ax.add_collection(patches)
+    ax.eventplot(spikes)  # , orientation='horizontal')
+    return ax
+
+
+def rasterplot_phase(phase: Phase,
+               ax: Axes,
+               with_digital: bool = False) -> Axes:
+    """
+    Draw the rasterplot of an experiment phase
+    @param [in] phase
+    @param [in/out] ax
+    @returns the same ax passed as argument
+    """
+
     electrodes = []
     spikes = []
 

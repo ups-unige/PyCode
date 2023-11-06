@@ -1,7 +1,7 @@
 """PyCode input/output functions.
 
 Author: Mascelli Leonardo
-Last edited: 23-10-2023
+Last edited: 31-10-2023
 
 This file contains a collection of functions for reading or writing the
 experiment structures to file.
@@ -179,12 +179,11 @@ def load_peaks_from_hdf5(data) -> Dict[int, np.ndarray]:
     return ret
 
 
-def load_digital_from_hdf5(data, notes: Optional[str] = "") -> Signal:
+def load_digital_from_hdf5(data) -> Signal:
     """
     Extract the digital signal from an hdf5 file.
     Meant to be used only from load_phase_from_hdf5 function
     @param [in] data: the HDF5 data struct
-    @param [in] notes
     @returns the digital Signal
     """
 
@@ -197,7 +196,7 @@ def load_digital_from_hdf5(data, notes: Optional[str] = "") -> Signal:
     signal_data = ChannelData[data_index]
     signal_data -= np.min(signal_data)
 
-    return Signal(signal_data, sampling_frequency, notes)
+    return Signal(signal_data, sampling_frequency)
 
 
 def load_phase_from_hdf5(filename: Path,
@@ -216,7 +215,6 @@ def load_phase_from_hdf5(filename: Path,
 
     filename = Path(phase_file)
     info = PhaseInfo().default_parse(filename)
-    info.digital_notes("Some notes")
     phase = load_phase_from_hdf5(filename, info)
     """
 
@@ -232,7 +230,7 @@ def load_phase_from_hdf5(filename: Path,
         raise Exception("info.digital is True but the phase does not contain"
                         " two Analog Streams")
     digital = load_digital_from_hdf5(
-        data['AnalogStream/Stream_0/'], info.digital_notes) if info.digital\
+        data['AnalogStream/Stream_0/']) if info.digital\
         else None
 
     return Phase(info.name,
@@ -241,7 +239,6 @@ def load_phase_from_hdf5(filename: Path,
                  digital=digital,
                  sampling_frequency=info.sampling_frequency,
                  durate=0,  # info.durate, # TODO compute durate from hdf5
-                 notes=info.notes,
                  )
 
 

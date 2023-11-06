@@ -19,14 +19,12 @@ class Signal:
     same cases are other informations that this class take record of, like:
     - sampling_frequency
     - path of the data in the filesystem
-    - some user's notes
     """
 
-    def __init__(self, data: np.ndarray, sampling_frequency: float, note: str =
-                 "", path: Optional[Path] = None):
+    def __init__(self, data: np.ndarray, sampling_frequency: float,
+                 path: Optional[Path] = None):
         self.data = data
         self.sampling_frequency = sampling_frequency
-        self.note = note
         self.path = path
 
 
@@ -41,8 +39,6 @@ class PhaseInfo:
 
     def __init__(self):
         self.sampling_frequency = 10000.
-        self.digital_notes = None
-        self.notes = None
 
     def default_parse(self, filename: Path) -> PhaseInfo:
         """
@@ -71,12 +67,6 @@ class PhaseInfo:
             print(f"ERROR: PhaseInfo.default_parse. {e.args}")
         return self
 
-    def add_digital_notes(self, notes: str):
-        self.digital_notes = notes
-
-    def add_notes(self, notes: str):
-        self.notes = notes
-
     def set_sampling_frequency(self, sampling_frequency: float):
         self.sampling_frequency = sampling_frequency
 
@@ -96,7 +86,6 @@ class Phase:
                presence of stimulation or less.
     - sampling frequency: self explainatory
     - durate: the duration in seconds of the recording
-    - notes: some user notes about the recording
     """
 
     def __init__(
@@ -106,7 +95,6 @@ class Phase:
         digital: Optional[Signal],
         sampling_frequency: float,
         durate: float,
-        notes: str,
     ):
         self.name = name
         self.peaks = peaks
@@ -117,7 +105,6 @@ class Phase:
         self.phase_type: Optional[str] = None
         self.order: Optional[int] = None
         self.rest: str = ""
-        self.notes = notes
 
     def to_dict(self) -> Dict[str, Any]:
         return self.__dict__()
@@ -133,7 +120,6 @@ class Phase:
             "order": self.order,
             "sampling_frequency": self.sampling_frequency,
             "durate": self.durate,
-            "notes": self.notes,
         }
         peaks = []
         for p in self.peaks:
