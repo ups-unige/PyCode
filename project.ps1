@@ -24,6 +24,7 @@ Available COMMANDs:
 build         create PyCode package wheel
 test          run tests
 venv          start testing environment
+tui           run the tui tool
 help          print this help
 
 "@
@@ -61,6 +62,13 @@ function _Test
   deactivate
 }
 
+function _Tui
+{
+  _Venv
+  Start-Process powershell -ArgumentList  '-command "python ./pycode_tools/tui/root.py"'
+  deactivate
+}
+
 switch($args[0])
 {
 
@@ -82,6 +90,11 @@ switch($args[0])
   "venv"
   {
     _Venv
+  }
+
+  "tui"
+  {
+    _Tui
   }
 
   default

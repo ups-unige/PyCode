@@ -1,0 +1,25 @@
+Screen {
+  layout: horizontal;
+}
+
+.dirtree {
+  align: left middle; 
+  min-width: 35;
+  width: 1fr;
+}
+
+#tarea {
+  width: 6fr;
+}
+
+.control {
+  align: center top;
+  box-sizing: content-box;
+  margin: 1;
+  padding: 1;
+}
+
+#controls {
+  min-width: 25;
+  align: center top;
+}

@@ -58,6 +58,7 @@ class PhaseInfo:
             self.name = arg_list[0]
             self.div = int(arg_list[1][arg_list[1].find("DIV") + 3:])
             phase_type_label = arg_list[2]
+            self.phase_type = phase_type_label
             self.digital = phase_type_label.upper() == "STIM"
             self.order = int(arg_list[3])
             self.other = None
@@ -125,6 +126,18 @@ class Phase:
         for p in self.peaks:
             peaks.append((p, self.peaks[p]))
         ret["peaks"] = np.array(peaks, dtype=object)  # type: ignore
+
+        return ret
+
+    def phase_info(self) -> PhaseInfo:
+        ret = PhaseInfo()
+        ret.name = self.name
+        ret.div = self.div
+        ret.phase_type = self.phase_type
+        ret.sampling_frequency = self.sampling_frequency
+        ret.order = self.order
+        ret.digital = self.digital
+        ret.durate = self.durate
 
         return ret
 

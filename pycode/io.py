@@ -174,7 +174,7 @@ def load_peaks_from_hdf5(data) -> Dict[int, np.ndarray]:
     for entry in data.keys():
         if entry.startswith('TimeStampEntity_'):
             index = int(entry[16:])
-            ret[map[index]] = np.array(data[f'TimeStampEntity_{index}'])
+            ret[map[index]] = np.array(data[f'TimeStampEntity_{index}'])[0]
 
     return ret
 
@@ -221,7 +221,7 @@ def load_phase_from_hdf5(filename: Path,
     if info is not None:
         pass
     else:
-        info = PhaseInfo().default_parse(filename)
+        info = PhaseInfo().default_parse(Path(filename))
 
     data = File(filename)['/Data/Recording_0']
 

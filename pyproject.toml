@@ -16,6 +16,8 @@ dependencies = [
   "matplotlib",
   "scipy",
   "h5py",
+  "textual",
+  "rich-pixels",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
