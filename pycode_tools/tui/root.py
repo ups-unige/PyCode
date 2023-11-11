@@ -11,11 +11,12 @@ from textual.app import App
 from textual.containers import Vertical
 from textual.screen import Screen
 from textual.widgets import (
-    Button, DirectoryTree, Footer, Header, Static, TextArea)
+    Button, DirectoryTree, Footer, Header, Static, Tree)
 
 import matplotlib.pyplot as plt
 
 from pycode.experiment import PhaseInfo
+from pycode.hdf5 import H5Content
 from pycode.io import load_phase_from_hdf5
 from pycode.operation import rasterplot_phase
 
@@ -63,6 +64,23 @@ class Intro(Screen):
                      shrink=True, classes='intro')
 
 
+class PhaseTree(Tree):
+    def __init__(self, content: H5Content, *kargs, **kwargs):
+        super().__init__(content.name, *kargs, **kwargs)
+        for analog in content.analogs:
+            self.root.expand()
+            analog_node = self.root.add(analog.name, expand=True)
+            analog_node.collapse()
+            for i in range(analog.length):
+                analog_node.add_leaf(f"Channel {i}", data=(analog, i))
+
+    def on_tree_node_selected(self, selected):
+        data = selected.node.data
+        if data is not None:
+            plt.plot(data[0].parse_signal(data[1]))
+            plt.show()
+
+
 class HDF5DirectoryTree(DirectoryTree):
     def __init__(self, path, classes=""):
         super().__init__(path, classes=classes)
@@ -87,9 +105,10 @@ class HDF5DirectoryTree(DirectoryTree):
                 file.visit(
                     lambda x: add_text(x))
                 self.screen.get_widget_by_id('tarea').remove_children()
-                self.screen.get_widget_by_id('tarea').mount(TextArea(text))
+                self.screen.get_widget_by_id('tarea').mount(
+                    PhaseTree(H5Content(message.path)))
 
-#                     lambda x: self.parent.parent.add_text(str(x)))
+#                self.screen.get_widget_by_id('tarea').mount(TextArea(text))
 
 
 class Tui(App):
@@ -116,15 +135,6 @@ class Tui(App):
             yield Button('Rasterplot', classes='control', id='btn_rasterplot')
             yield Button('Open', classes='control')
 
-    def add_text(self, line):
-        text = self.query_one(TextArea)
-        text.insert('\n')
-        text.insert(line)
-
-#    def clear_text(self):
-#        text = self.query_one(TextArea)
-#        text.clear()
-#
     def action_parent_dir(self):
         GLOBALS['curdir'] = GLOBALS['curdir'].parent
         dt = self.query_one(DirectoryTree)
@@ -151,8 +161,6 @@ class Tui(App):
             table.add_row('With digital', str(info.digital))
             self.screen.get_widget_by_id('tarea').remove_children()
             self.screen.get_widget_by_id('tarea').mount(Static(table))
-
-
         else:
             self.notify('You shall first select a phase file to open',
                         title='No current file',
