@@ -5,10 +5,11 @@ can be found at
 https://www.multichannelsystems.com/sites/multichannelsystems.com/files/documents/manuals/HDF5%20MCS%20Raw%20Data%20Definition.pdf
 '''
 
-from typing import List, Dict
 from pathlib import Path
-from h5py import File, Group, Dataset
-import numpy as np
+from typing import Dict, List, Optional
+
+import numpy as np  # type: ignore
+from h5py import Dataset, File, Group  # type: ignore
 
 
 class InfoChannel:
@@ -61,7 +62,7 @@ class AnalogStream:
                 f'ERROR: AnalogStream __init__, {key} could be corrupted',
                 e.args)
 
-    def quick_info_list(self, index: int) -> List[Dict[str, str]]:
+    def quick_info_list(self, index: int) -> Dict[str, str]:
         info_channel = self.info_channels[index]
         return {
             'index': str(info_channel.channel_id),
@@ -76,10 +77,8 @@ class AnalogStream:
         exponent = info_channel.exponent
         mantissas = np.expand_dims(self.data_channels[index][:], 1)
 
-        print('here 1')
-        converted_data = (mantissas-np.ones(shape=mantissas.shape)*offset) *\
+        converted_data = (mantissas - np.ones(shape=mantissas.shape) * offset) *\
             conversion_factor * np.power(10., exponent)
-        print('here 2')
 
         return converted_data
 
@@ -123,13 +122,12 @@ class TimeStampStream:
             for i in range(self.length):
                 self.info_time_stamps.append(
                     InfoTimeStamp(info_time_stamps[i]))
-                print(self.info_time_stamps[i])
         except Exception as e:
             print(
                 f'ERROR: TimeStampStream __init__, {key} could be corrupted',
                 e.args)
 
-    def quick_info_list(self, index: int) -> List[Dict[str, str]]:
+    def quick_info_list(self, index: int) -> Dict[str, str]:
         info_time_stamp = self.info_time_stamps[index]
         return {
             'index': str(info_time_stamp.channel_id),
@@ -158,7 +156,7 @@ class H5Content:
             data = data['/Data/Recording_0']
             keys = data.keys()
             if 'AnalogStream' in keys:
-                self.analogs = []
+                self.analogs: Optional[List[AnalogStream]] = []
                 analog_group = data['AnalogStream']
                 analog_keys = analog_group.keys()
                 for key in analog_keys:
@@ -168,7 +166,7 @@ class H5Content:
                 self.analogs = None
 
             if 'TimeStampStream' in keys:
-                self.time_stamps = []
+                self.time_stamps: Optional[List[TimeStampStream]] = []
                 time_stamps_group = data['TimeStampStream']
                 time_stamps_keys = time_stamps_group.keys()
                 for key in time_stamps_keys:

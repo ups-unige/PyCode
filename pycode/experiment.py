@@ -7,10 +7,10 @@ Here are contained the main structures that are used to contain the data
 recorded during the experiments.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
-
 from pathlib import Path
-import numpy as np
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
+
+import numpy as np  # type: ignore
 
 
 class Signal:
@@ -28,8 +28,7 @@ class Signal:
         self.path = path
 
 
-class PhaseInfo:  # just for the linter complains
-    pass
+_T = TypeVar('_T', bound='PhaseInfo')
 
 
 class PhaseInfo:
@@ -40,7 +39,7 @@ class PhaseInfo:
     def __init__(self):
         self.sampling_frequency = 10000.
 
-    def default_parse(self, filename: Path) -> PhaseInfo:
+    def default_parse(self: _T, filename: Path) -> _T:
         """
         This method if where the naming convenction of the mcd ror h5 files is
         used for generate the metadata of the phase.
