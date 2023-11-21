@@ -1,5 +1,6 @@
 from typing import Iterable
 from os import curdir
+from os.path import realpath
 from pathlib import Path
 
 from h5py import File
@@ -58,9 +59,10 @@ def rasterplot(file_path: Path):
 class Intro(Screen):
     def __init__(self, *kargs, **kwargs):
         super().__init__(*kargs, **kwargs)
+        self.introfile = Path(realpath(__file__)[:-7] + "../images/smp.png")
 
     def compose(self):
-        yield Static(Pixels.from_image_path("e:/unige/pycode/images/smp.png"),
+        yield Static(Pixels.from_image_path(self.introfile),
                      shrink=True, classes='intro')
 
 

@@ -21,13 +21,34 @@ USAGE:
 
 Available COMMANDs:
 
+init          initialize the poetry and the building environment
 build         create PyCode package wheel
 test          run tests
 venv          start testing environment
+poetry        start poetry environment
 tui           run the tui tool
 help          print this help
 
 "@
+}
+
+function _Init {
+  if (-not (Test-Path "./.poetry"))
+  {
+    python -m venv .poetry
+    ./.poetry/Scripts/Activate.ps1
+    pip install -U pip setuptools
+    $env:SETUPTOOLS_USE_DISTUTILS="stdlib"
+    pip install poetry
+    poetry init
+    poetry update
+    deactivate
+  }
+}
+
+function _Poetry {
+    $env:SETUPTOOLS_USE_DISTUTILS="stdlib"
+    ./.poetry/Scripts/Activate.ps1
 }
 
 function _Venv {
@@ -46,13 +67,13 @@ function _Venv {
 
 function _Build
 {
+  _Init
+  _Poetry
+  poetry build
+  deactivate
   _Venv
-  Push-Location ..
-  pip install -q build hatchling
-  python -m build -n -w "PyCode"
-  Pop-Location
   pip uninstall --yes pycode
-  pip install -q ./dist/pycode-0.0.1-py3-none-any.whl
+  pip install -q ./dist/pycode-0.1.0-py3-none-any.whl
 }
 
 function _Test
@@ -65,7 +86,14 @@ function _Test
 function _Tui
 {
   _Venv
-  Start-Process powershell -ArgumentList  '-command "python ./pycode_tools/tui/root.py"'
+  Start-Process powershell -ArgumentList  '-command "python ./tools/tui.py"'
+  deactivate
+}
+
+function _Gui
+{
+  _Venv
+  python ./tools/main.py
   deactivate
 }
 
@@ -75,6 +103,10 @@ switch($args[0])
   "help"
   {
     _Help
+  }
+
+  "init" {
+    _Init
   }
 
   "build"
@@ -92,9 +124,18 @@ switch($args[0])
     _Venv
   }
 
+  "poetry" {
+    _Poetry
+  }
+
   "tui"
   {
     _Tui
+  }
+
+  "gui"
+  {
+    _Gui
   }
 
   default

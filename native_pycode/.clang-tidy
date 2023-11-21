@@ -1,0 +1,11 @@
+Checks: 'bugprone-use-after-move,modernize-*'
+
+CheckOptions:
+  - key: modernize-use-default-member-init
+    value: 'true'
+  - key: modernize-use-equals-default
+    value: 'true'
+  - key: modernize-use-equals-delete
+    value: 'true'
+  - key: modernize-use-noexcept
+    value: 'true'

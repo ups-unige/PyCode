@@ -1,29 +1,21 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
+[tool.poetry]
 name = "pycode"
-version = "0.0.1"
-authors = [
-  { name="Mascelli Leonardo", email="lmascelli@gmail.com"},
-]
-description = "A simple framework for analyze MEA recordings"
+version = "0.1.0"
+description = ""
+authors = ["lmascelli <lmascelli@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.7"
-dependencies = [
-  "numpy",
-  "matplotlib",
-  "scipy",
-  "h5py",
-  "textual",
-  "rich-pixels",
-]
-classifiers = [
-  "Programming Language :: Python :: 3",
-  "Operating System :: OS Independent",
-]
 
-[project.urls]
-"Homepage" = "https://github.com/ups-unige/PyCode"
-"Bug Tracker" = "https://github.com/ups-unige/PyCode/issues"
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+numpy = "^1.0.0"
+matplotlib = "^3.0.0"
+scipy = "^1.0.0"
+h5py = "^3.0.0"
+PySide6  = "^6.6.0"
+textual = "*"
+rich_pixels = "*"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
