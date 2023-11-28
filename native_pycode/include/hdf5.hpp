@@ -5,10 +5,12 @@
 
 namespace CodePP::HDF5 {
 
+struct H5InfoChannel {
+};
+
 class H5Analog {
 public:
-  H5Analog(hid_t file_id, hid_t group_id, string name)
-      : file_id(file_id), group(group_id), name(std::move(name)) {}
+  H5Analog(hid_t file_id, hid_t group_id, string name);
 
   [[nodiscard]] auto info() const -> string;
 

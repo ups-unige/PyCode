@@ -4,6 +4,13 @@
 using namespace H5;
 
 namespace CodePP::HDF5 {
+
+////////////////////////////////////////////////////////////////////////////////
+///
+///                               UTILITIES
+///
+////////////////////////////////////////////////////////////////////////////////
+
 /// get_tree (const hid_t file_id) -> string
 /// get the tree content of the file at *filepath*
 ///
@@ -31,22 +38,6 @@ auto get_file_tree(const hid_t file_id) -> string {
   return ret;
 }
 
-/// get_analogs(string filepath, unsigned int stream) ->
-/// std::optional<H5::Group> get the analogs group of a stream
-///
-/// @param [in] filepath
-/// @param [in] the index of the stream
-/// @returns an optional with the group if succeded in exctracting it
-auto get_analogs(const string &filepath, unsigned int stream)
-    -> std::optional<H5::Group> {
-  (void)(stream);
-  H5File file(filepath, H5F_ACC_RDONLY);
-  if (H5Oexists_by_name(file.getId(), "/Data/Recording_0", H5P_DEFAULT) == 1) {
-    return {H5Oopen(file.getId(), "/Data/Recording_0", H5P_DEFAULT)};
-  } else
-    return {};
-}
-
 /// get_object_path(hid_t object, string&& path) -> optional<string>
 /// get the path of an object
 ///
@@ -67,6 +58,35 @@ auto get_object_path(hid_t object, string &&path) -> optional<string> {
     return {path};
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+///
+///                               H5NANALOG
+///
+////////////////////////////////////////////////////////////////////////////////
+
+H5Analog::H5Analog(hid_t file_id, hid_t group_id, string name)
+    : file_id(file_id), group(group_id), name(std::move(name)) {
+}
+
+auto H5Analog::info() const -> string {
+  string ret;
+  ret += "path: " + name + "\n";
+  auto info_channel_dataset =
+      H5Oopen(group.getId(), (name + "/InfoChannel").c_str(), H5P_DEFAULT);
+  auto dataspace_id = H5Dget_space(info_channel_dataset);
+  auto ndims = H5Sget_simple_extent_ndims(dataspace_id);
+  auto npoints = H5Sget_simple_extent_npoints(dataspace_id);
+  ret += std::to_string(ndims) + ", " + std::to_string(npoints) + "\n";
+  ret += "-----------------------------------------------------\n";
+  return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+///
+///                                  H5CONTENT
+///
+////////////////////////////////////////////////////////////////////////////////
 
 auto H5Content::build(const string &path) -> optional<unique_ptr<H5Content>> {
   auto file_id = H5Fopen(path.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -103,12 +123,6 @@ auto H5Content::get_analogs() const -> vector<H5Analog> {
       }
     }
   }
-  return ret;
-}
-auto H5Analog::info() const -> string {
-  string ret;
-  ret += "path: " + name + "\n";
-  ret += "n: " + std::to_string(group.getNumObjs()) + "\n";
   return ret;
 }
 } // namespace CodePP::HDF5
