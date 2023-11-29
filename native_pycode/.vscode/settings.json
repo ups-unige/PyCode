@@ -1,0 +1,8 @@
+{
+    "cmake.configureOnOpen": true,
+    "files.associations": {
+        "*.excalidraw": "json",
+        "*.excalidrawlib": "json",
+        "optional": "cpp"
+    }
+}

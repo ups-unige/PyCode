@@ -1,0 +1,6 @@
+[requires]
+hdf5/[>=1.14]
+
+[generators]
+CMakeDeps
+CMakeToolchain

@@ -27,21 +27,28 @@ set(SOURCES
   main.cpp)
 list(TRANSFORM SOURCES PREPEND "src/")
 
-find_package(HDF5 REQUIRED COMPONENTS CXX REQUIRED)
+find_package(HDF5 CONFIG REQUIRED COMPONENTS CXX REQUIRED)
+if(NOT HDF5_FOUND)
+  message(FATAL_ERROR "HDF5 library is necessary to build CodePP")
+else()
+endif()
+
 find_package(Python COMPONENTS Interpreter REQUIRED Development REQUIRED)
+if(NOT Python_FOUND)
+  message(FATAL_ERROR "Python library is necessary to build CodePP")
+endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
+
 target_include_directories(${PROJECT_NAME} PRIVATE 
   "${CMAKE_SOURCE_DIR}/include" 
-  ${HDF5_INCLUDE_DIRS}
+  "${HDF5_INCLUDE_DIRS}"
   ${Python_INCLUDE_DIRS}
 )
-target_link_directories(${PROJECT_NAME} PRIVATE 
-  ${HDF5_LIB_DIR}
-)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE 
   all_warnings warnings_are_errors
   fmt::fmt
-  ${HDF5_CXX_LIBRARY_NAMES}
+  ${HDF5_LIBRARIES}
   ${Python_LIBRARIES}
 )
