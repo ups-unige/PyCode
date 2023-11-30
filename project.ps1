@@ -1,3 +1,56 @@
+################################################################################
+#                           ENVIRONMENT VARIABLES
+################################################################################
+
+$project = Split-Path -Path (Get-Location) -Leaf
+$env:SETUPTOOLS_USE_DISTUTILS="stdlib"
+
+################################################################################
+#                                  UTITITIES
+################################################################################
+
+function check_n_pop_directory([String]$name)
+{
+  New-Item -Type Directory -Path $name -ErrorAction Ignore
+  Push-Location $name
+}
+
+function activate_conda()
+{
+  if ( $IsWindows )
+  {
+    conda shell.powershell hook | Out-String | Invoke-Expression
+  } elseif ( $IsLinux )
+  {
+    Write-Information "TODO"
+    return
+  } else
+  {
+    Write-Information "TODO"
+    return
+  }
+}
+
+function download_python([string]$python_version, [string]$os_version)
+{
+  $python_url=  "https://www.python.org/ftp/python/$python_version/python-$python_version-embed-$os_version.zip"
+  Invoke-WebRequest -Uri $python_url -OutFile python.zip
+  Expand-Archive -path python.zip -DestinationPath build
+}
+
+
+
+################################################################################
+#                                   TASKS
+################################################################################
+# 
+# to build the project it's necessary the anaconda package manager. it is used
+# to download the python interpreter and libraries and to download conan, a C++
+# package manager used to get the C++ libraries
+
+
+
+
 function _Heading
 {
   Write-Host @"
@@ -25,33 +78,35 @@ init          initialize the poetry and the building environment
 build         create PyCode package wheel
 test          run tests
 venv          start testing environment
-poetry        start poetry environment
 tui           run the tui tool
 help          print this help
 
 "@
 }
 
-function _Init {
-  if (-not (Test-Path "./.poetry"))
+function _Init
+{
+  $conda = (Get-Command conda -ErrorAction SilentlyContinue)  
+  if ($null -eq $conda)
   {
-    python -m venv .poetry
-    ./.poetry/Scripts/Activate.ps1
-    pip install -U pip setuptools
-    $env:SETUPTOOLS_USE_DISTUTILS="stdlib"
-    pip install poetry
+    Write-Error "conda is not installed or available in PATH. install it first."
+    return
+  } else
+  {
+    activate_conda
+    conda create -n devel conan poetry setuptools
+    conda activate devel
+    conan profile detect --force
+    conan install . --output-folder=build --build=missing -s compiler.cppstd=20 -s build_type=Debug
     poetry init
     poetry update
-    deactivate
+    download_python "3.10.0" "amd64" 
+    conda deactivate
   }
 }
 
-function _Poetry {
-    $env:SETUPTOOLS_USE_DISTUTILS="stdlib"
-    ./.poetry/Scripts/Activate.ps1
-}
-
-function _Venv {
+function _Venv
+{
   if (-not (Test-Path "./.venv"))
   {
     python -m venv ./.venv   
@@ -68,12 +123,22 @@ function _Venv {
 function _Build
 {
   _Init
-  _Poetry
+  check_n_pop_directory("build")
+  cmake -G"Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $arg_list ..
+  cmake --build .
+  Pop-Location
   poetry build
-  deactivate
   _Venv
   pip uninstall --yes pycode
   pip install -q ./dist/pycode-0.1.0-py3-none-any.whl
+}
+
+function _Run
+{
+  check_n_pop_directory("build")
+  $command = './' + $project
+  Invoke-Expression $command
+  Pop-Location
 }
 
 function _Test
@@ -105,13 +170,29 @@ switch($args[0])
     _Help
   }
 
-  "init" {
+  "init"
+  {
     _Init
   }
 
   "build"
   {
-    _Build
+    _Build($args[1..($args.Length)])
+  }
+
+  "run" {
+    build($args[1..($args.Length)])
+    run
+  }
+
+  "python"
+  {
+    download_python "3.10.0" "amd64" 
+  }
+
+  "clean"
+  {
+    Remove-Item -Force -Recurse -Path "./build"
   }
 
   "test"
@@ -124,7 +205,8 @@ switch($args[0])
     _Venv
   }
 
-  "poetry" {
+  "poetry"
+  {
     _Poetry
   }
 
@@ -136,6 +218,11 @@ switch($args[0])
   "gui"
   {
     _Gui
+  }
+
+  "conda"
+  {
+    activate_conda
   }
 
   default

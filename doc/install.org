@@ -1,0 +1,29 @@
+* Install miniforge distribution
+  miniforge is a way to install both conda and mamba that are package managers
+  for python and C/C++ libraries.
+** Download the miniforge installer
+       [[https://github.com/conda-forge/miniforge]]
+** Install it
+  Install for the current user (no administrator priviledge required) and if
+  you want add it to the PATH environment variable. If you want to skip the
+  last step you should invoke the mamba binary specifing the path each time.
+ 
+* Mamba environment
+  TODO Description of what a mamba environment is
+** create the environment
+   #+begin_src shell
+   mamba create -c pycode <package-list>
+   #+end_src
+** activate the environment
+   #+begin_src shell
+   conda activate pycode
+   #+end_src
+
+*** Windows
+    Using powershell on windows is a bit trickier. The quick way is to
+    initialize the powershell environment modifing the profile.ps1
+    script that is run at powershell startup. This is done automatically by
+    mamba with
+    #+begin_src
+    mamba init powershell
+    #+end_src

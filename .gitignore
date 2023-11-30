@@ -16,3 +16,4 @@ native_pycode/.nvim/
 native_pycode/.nvim.lua
 native_pycode/build/
 native_pycode/tags
+native_pycode/python.zip
