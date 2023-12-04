@@ -9,7 +9,7 @@ dist/
 poetry.lock
 pycode/__pycache__/
 tests/data/
-cmake/*
+cmake/
 !cmake/utils.cmake
 !cmake/compiler.cmake
 .nvim.lua
