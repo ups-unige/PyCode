@@ -1,0 +1,4 @@
+# ninja log v5
+9	2982	7233506379111659	CMakeFiles/PyCodeLib.dir/src/python.cpp.obj	f6f39647892f5ba3
+18	3267	7233506381953109	_deps/fmt-build/CMakeFiles/fmt.dir/src/os.cc.obj	11c86304eef6bfeb
+14	3395	7233506383196903	_deps/fmt-build/CMakeFiles/fmt.dir/src/format.cc.obj	4f7baa0d4cc99fa

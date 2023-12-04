@@ -1,5 +1,4 @@
-#include <cstring>
-#include <hdf5.hpp>
+#include <codepp/hdf5.hpp>
 
 using namespace H5;
 
@@ -66,8 +65,7 @@ auto get_object_path(hid_t object, string &&path) -> optional<string> {
 ////////////////////////////////////////////////////////////////////////////////
 
 H5Analog::H5Analog(hid_t file_id, hid_t group_id, string name)
-    : file_id(file_id), group(group_id), name(std::move(name)) {
-}
+    : file_id(file_id), group(group_id), name(std::move(name)) {}
 
 auto H5Analog::info() const -> string {
   string ret;

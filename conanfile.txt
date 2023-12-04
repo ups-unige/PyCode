@@ -1,5 +1,6 @@
 [requires]
 hdf5/[>=1.14]
+armadillo/[>=12.6]
 
 [generators]
 CMakeDeps

@@ -1,21 +1,9 @@
-#pragma once
-
+#include <prelude.hpp>
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include <prelude.hpp>
 
+#pragma once
 namespace CodePP::Python {
-class Python {
-public:
-  Python(string argv0);
-  ~Python();
-
-  void f() const;
-
-private:
-  wchar_t *program;
-};
-
 template <bool x = false> struct PyRef {
   PyRef() : ref(nullptr) {}
   PyRef(PyObject *ref) : ref(ref) {}
@@ -31,4 +19,4 @@ template <bool x = false> struct PyRef {
   }
   PyObject *ref;
 };
-} // namespace CodePP::Python
+} // namespace CodePP

@@ -5,8 +5,7 @@
 
 namespace CodePP::HDF5 {
 
-struct H5InfoChannel {
-};
+struct H5InfoChannel {};
 
 class H5Analog {
 public:

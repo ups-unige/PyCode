@@ -1,6 +1,5 @@
-#include <fmt/format.h>
-#include <fmt/xchar.h>
-#include <python.hpp>
+#include <codepp/codepp.hpp>
+#include <codepp/python.hpp>
 
 namespace CodePP::Python {
 
@@ -26,38 +25,38 @@ void Python::f() const {
   string func = "multiply";
   vector<string> args = {"3", "2"};
 
-  PyRef pModule;
-  {
-    PyRef pName = PyUnicode_DecodeFSDefault(name.c_str());
-    pModule = PyImport_Import(pName.ref);
-  }
-
-  if (pModule.ref != nullptr) {
-    PyRef pFunc = PyObject_GetAttrString(pModule.ref, func.c_str());
-    if (pFunc.ref and PyCallable_Check(pFunc.ref)) {
-      PyRef pArgs = PyTuple_New(args.size());
-      auto i = 0;
-      for (auto &arg : args) {
-        PyRef<true> pValue = PyLong_FromLong(std::stol(arg));
-        if (!pValue.ref) {
-          fmt::print("Cannot convert argument {}", arg);
-        }
-        PyTuple_SetItem(pArgs.ref, i++, pValue.ref);
-      }
-      PyRef pValue = PyObject_CallObject(pFunc.ref, pArgs.ref);
-      if (pValue.ref != nullptr) {
-        fmt::print("Result of the call: {}\n", PyLong_AsLong(pValue.ref));
-      } else {
-        PyErr_Print();
-        fmt::print("Call failed\n");
-      }
-    } else {
-      PyErr_Print();
-      fmt::print("Cannot find function \"{}\"\n", func);
-    }
-  } else {
-    PyErr_Print();
-    fmt::print("Falied to load \"{}\"\n", name);
-  }
+  //  PyRef pModule;
+  //  {
+  //    PyRef pName = PyUnicode_DecodeFSDefault(name.c_str());
+  //    pModule = PyImport_Import(pName.ref);
+  //  }
+  //
+  //  if (pModule.ref != nullptr) {
+  //    PyRef pFunc = PyObject_GetAttrString(pModule.ref, func.c_str());
+  //    if (pFunc.ref and PyCallable_Check(pFunc.ref)) {
+  //      PyRef pArgs = PyTuple_New(args.size());
+  //      auto i = 0;
+  //      for (auto &arg : args) {
+  //        PyRef<true> pValue = PyLong_FromLong(std::stol(arg));
+  //        if (!pValue.ref) {
+  //          fmt::println("Cannot convert argument {}", arg);
+  //        }
+  //        PyTuple_SetItem(pArgs.ref, i++, pValue.ref);
+  //      }
+  //      PyRef pValue = PyObject_CallObject(pFunc.ref, pArgs.ref);
+  //      if (pValue.ref != nullptr) {
+  //        fmt::println("Result of the call: {}", PyLong_AsLong(pValue.ref));
+  //      } else {
+  //        PyErr_Print();
+  //        fmt::println("Call failed");
+  //      }
+  //    } else {
+  //      PyErr_Print();
+  //      fmt::println("Cannot find function \"{}\"", func);
+  //    }
+  //  } else {
+  //    PyErr_Print();
+  //    fmt::println("Falied to load \"{}\"", name);
+  //  }
 }
 } // namespace CodePP::Python

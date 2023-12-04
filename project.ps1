@@ -1,21 +1,50 @@
 ################################################################################
+#                             PYCODE UTILITY SCRIPT                            
+#                              Università di Genova                            
+#                                                                              
+# Initialize, build and run the PyCode or the CodePP libraries and binaries.
+# The requirements for using this script are:
+# - powershell (the cross platform version should be valid if not on Windows)
+# - a C++ compiler with the c++ standard 20 support (i've used mingw-w64)
+# - CMake
+# - ninja
+# - anaconda3
+# - Qt6 framework installed or an open source qt licence credentials
+
+################################################################################
 #                           ENVIRONMENT VARIABLES
 ################################################################################
 
+$ErrorActionPreference = 'Stop'
+# $this_dir = (Get-Location).Path
 $project = Split-Path -Path (Get-Location) -Leaf
-$env:SETUPTOOLS_USE_DISTUTILS="stdlib"
+# modify the following variable to point to the qt6 install folder
+$env:Qt6_ROOT="D:\Qt\6.6.0\mingw_64\"
 
 ################################################################################
 #                                  UTITITIES
 ################################################################################
 
-function check_n_pop_directory([String]$name)
+# Check if a directory exists and create it if not. Then pop its location
+function Script:check_n_pop_directory([String]$name)
 {
   New-Item -Type Directory -Path $name -ErrorAction Ignore
   Push-Location $name
 }
 
-function activate_conda()
+# Run a python command with the build python interpreter
+function Script:PythonCommand([String]$command)
+{
+  if (-not (Get-Item -Path "build/python39._pth"))
+  {
+    DownloadPython "3.9.0" "amd64" 
+  }
+  build/python $command
+}
+
+# This function permit to avoid adding the conda initialization on the default
+# script that starts with the shell saving a slowdown on each shells start
+function Script:ActivateConda()
 {
   if ( $IsWindows )
   {
@@ -31,14 +60,129 @@ function activate_conda()
   }
 }
 
-function download_python([string]$python_version, [string]$os_version)
+function Script:Heading
 {
-  $python_url=  "https://www.python.org/ftp/python/$python_version/python-$python_version-embed-$os_version.zip"
-  Invoke-WebRequest -Uri $python_url -OutFile python.zip
-  Expand-Archive -path python.zip -DestinationPath build
+  Write-Host @"
+
+********************************************************************************
+*                                                                              *
+*                             PYCODE UTILITY SCRIPT                            *
+*                              Università di Genova                            *
+*                                                                              *
+********************************************************************************
+
+"@
+}
+
+function Script:Help
+{
+  Write-Host @"
+
+USAGE:
+./project.ps1 COMMAND [ARGS]
+
+Available COMMANDs:
+
+init                            initialize or reset the development environment
+build [-PyCode/-CodePP/-All]    create PyCode package wheel
+gui                             run the gui tool
+tui                             run the tui tool (not updated anymore)
+help                            print this help
+
+"@
 }
 
 
+################################################################################
+#                                  GET RESOURCES
+################################################################################
+
+# Download and install an embeddable python distribution in the build folder
+# to be used for the embedded python interpreter in CodePP. Also installs pip
+# so that the required libraries could be installed
+function Script:DownloadPython([string]$python_version, [string]$os_version)
+{
+  $python_url=  "https://www.python.org/ftp/python/$python_version/python-$python_version-embed-$os_version.zip"
+  Invoke-WebRequest -Uri $python_url -OutFile python.zip
+  Expand-Archive -path python.zip -DestinationPath "build" -Force
+  Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile build/get-pip.py
+  ./build/python ./build/get-pip.py
+  Add-Content -Path "build\python$(($python_version -replace '[^0-9]','').Substring(0, 2))._pth" -Value "Lib/site-packages"
+}
+
+# Installation of the Qt6 framework locally in the development environment
+function Script:InstallQt([string]$qt_installer_version, [string]$os_version)
+{
+  switch ($os_version)
+  {
+    "windows"
+    {
+      $qt_installer_suffix = "exe"
+    }
+    "linux"
+    {
+      $qt_installer_suffix = "run"
+    }
+    "macos"
+    {
+      $qt_installer_suffix = "dmg"
+    }
+  }
+  $qt_url = "https://d13lb3tujbc8s0.cloudfront.net/onlineinstallers/qt-unified-$os_version-x64-$qt_installer_version-online.$qt_installer_suffix"
+  Invoke-WebRequest -Uri $qt_url -OutFile qt_installer.exe
+  ./qt_installer
+}
+
+################################################################################
+#                               INIT ENVIRONMENTS
+################################################################################
+# this will get conan to install binaries and artifacts locally
+$env:CONAN_HOME="$((Get-Location).Path)/devel/conan"
+# i don't remember this one. maybe it's used by poetry to compile wheels with 
+# mingw_w64
+$env:SETUPTOOLS_USE_DISTUTILS="stdlib"
+
+# Clean the development environment
+function Script:DevelClean
+{
+  Remove-Item -Force -Recurse -Path "./devel" -ErrorAction Ignore
+}
+
+# Create a conda environment and install conan and poetry in it
+function Script:DevelConda
+{
+  Script:ActivateConda
+  conda create -y -p "./devel" python=3.9 conan poetry setuptools
+  conda activate "./devel"
+}
+
+function Script:PoetryClean
+{
+  Remove-Item -Path ".venv" -Force -ErrorAction Ignore -Recurse
+}
+
+# Initialize the development environment installing:
+# - conan: to get the c++ libraries and dependencies
+# - python embeddable: to let the interpreter being included in CodePP
+# - poetry: to build the PyCode distribution package
+function Script:Init
+{
+  DevelClean
+  $conda = (Get-Command conda -ErrorAction SilentlyContinue)  
+  if ($null -eq $conda)
+  {
+    Write-Error "conda is not installed or available in PATH. install it first."
+    return
+  } else
+  {
+    DevelConda
+
+    conan profile detect --force
+    conan install . --output-folder=build --build=missing -s compiler.cppstd=20 -s build_type=Debug
+
+    DownloadPython "3.9.0" "amd64" 
+  }
+}
 
 ################################################################################
 #                                   TASKS
@@ -49,91 +193,55 @@ function download_python([string]$python_version, [string]$os_version)
 # package manager used to get the C++ libraries
 
 
-
-
-function _Heading
+function Script:BuildPyCode
 {
-  Write-Host @"
-
-********************************************************************************
-*                                                                              *
-*                               PYCODE TEST SCRIPT                             *
-*                              University of Genova                            *
-*                                                                              *
-********************************************************************************
-
-"@
+  poetry build
+  build/python -m pip uninstall --yes pycode
+  build/python -m pip install -q ./dist/pycode-0.1.0-py3-none-any.whl
 }
 
-function _Help
+function Script:BuildCodePP
 {
-  Write-Host @"
-
-USAGE:
-./project.ps1 COMMAND [ARGS]
-
-Available COMMANDs:
-
-init          initialize the poetry and the building environment
-build         create PyCode package wheel
-test          run tests
-venv          start testing environment
-tui           run the tui tool
-help          print this help
-
-"@
-}
-
-function _Init
-{
-  $conda = (Get-Command conda -ErrorAction SilentlyContinue)  
-  if ($null -eq $conda)
-  {
-    Write-Error "conda is not installed or available in PATH. install it first."
-    return
-  } else
-  {
-    activate_conda
-    conda create -n devel conan poetry setuptools
-    conda activate devel
-    conan profile detect --force
-    conan install . --output-folder=build --build=missing -s compiler.cppstd=20 -s build_type=Debug
-    poetry init
-    poetry update
-    download_python "3.10.0" "amd64" 
-    conda deactivate
-  }
-}
-
-function _Venv
-{
-  if (-not (Test-Path "./.venv"))
-  {
-    python -m venv ./.venv   
-  }
-  if ($IsWindows)
-  {
-    Invoke-Expression "./.venv/Scripts/Activate.ps1" 
-  } else
-  {
-    Invoke-Expression "./.venv/bin/Activate.ps1" 
-  }
-}
-
-function _Build
-{
-  _Init
-  check_n_pop_directory("build")
+  Script:check_n_pop_directory("build")
+  conan profile detect --force
+  conan install . --output-folder=build --build=missing -s compiler.cppstd=20 -s build_type=Debug
   cmake -G"Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $arg_list ..
   cmake --build .
   Pop-Location
-  poetry build
-  _Venv
-  pip uninstall --yes pycode
-  pip install -q ./dist/pycode-0.1.0-py3-none-any.whl
 }
 
-function _Run
+function Script:Build
+{
+  ActivateConda
+  conda activate "./devel"
+
+  $arguments = $args[0] -split " "
+
+  foreach ($arg in $arguments)
+  {
+    if ($arg -match "-*$")
+    {
+      if ($arg -eq "-All")
+      {
+        BuildPyCode
+        BuildCodePP
+        return
+      }
+
+      if ($arg -eq "-Pycode")
+      {
+        BuildPyCode
+      }
+
+      if ($arg -eq "-CodePP")
+      {
+        BuildCodePP
+      }
+    }
+  }
+}
+
+function Script:Run
 {
   check_n_pop_directory("build")
   $command = './' + $project
@@ -141,93 +249,68 @@ function _Run
   Pop-Location
 }
 
-function _Test
-{
-  _Venv
-  python tests/test.py
-  deactivate
-}
-
-function _Tui
+function Script:Tui
 {
   _Venv
   Start-Process powershell -ArgumentList  '-command "python ./tools/tui.py"'
   deactivate
 }
 
-function _Gui
+function Script:Gui
 {
   _Venv
   python ./tools/main.py
   deactivate
 }
 
-switch($args[0])
+try
 {
-
-  "help"
+  switch($args[0])
   {
-    _Help
-  }
 
-  "init"
-  {
-    _Init
-  }
+    "help"
+    {
+      Help
+    }
 
-  "build"
-  {
-    _Build($args[1..($args.Length)])
-  }
+    "init"
+    {
+      Init
+    }
 
-  "run" {
-    build($args[1..($args.Length)])
-    run
-  }
+    "build"
+    {
+      Build $args[1..($args.Length)]
+    }
 
-  "python"
-  {
-    download_python "3.10.0" "amd64" 
-  }
+    "qt"
+    {
+      InstallQt "4.6.1" "windows"
+    }
 
-  "clean"
-  {
-    Remove-Item -Force -Recurse -Path "./build"
-  }
+    "clean"
+    {
+      Remove-Item -Force -Recurse -Path "./build"
+    }
 
-  "test"
-  {
-    _Test
-  }
+    "tui"
+    {
+      PythonCommand "tools/tui.py"
+    }
 
-  "venv"
-  {
-    _Venv
-  }
+    "gui"
+    {
+      PythonCommand "tools/main.py"
+    }
 
-  "poetry"
-  {
-    _Poetry
+    default
+    {
+      Heading
+      Help
+    }
   }
-
-  "tui"
-  {
-    _Tui
-  }
-
-  "gui"
-  {
-    _Gui
-  }
-
-  "conda"
-  {
-    activate_conda
-  }
-
-  default
-  {
-    _Heading
-    _Help
-  }
+} catch
+{
+  Pop-Location
+  Write-Output $_
 }

@@ -39,3 +39,5 @@ using std::optional, std::nullopt;
 #include <variant>
 using std::variant;
 #endif
+
+#include <fmt/format.h>
