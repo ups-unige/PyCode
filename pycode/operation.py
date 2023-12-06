@@ -6,11 +6,11 @@ Last Edited: 22-09-2023
 from copy import deepcopy
 from typing import List, Optional, Tuple, Union
 
-import numpy as np
-from matplotlib.axes import Axes
-from matplotlib.collections import PatchCollection
-from matplotlib.patches import Rectangle
-from scipy import signal
+import numpy as np  # type: ignore
+from matplotlib.axes import Axes  # type: ignore
+from matplotlib.collections import PatchCollection  # type: ignore
+from matplotlib.patches import Rectangle  # type: ignore
+from scipy import signal  # type: ignore
 
 from .experiment import Experiment, Phase
 from .utils import (intervals_boundaries, is_monodimensional,
@@ -61,8 +61,8 @@ def rasterplot(experiment: Experiment,
 
 
 def rasterplot_phase(phase: Phase,
-               ax: Axes,
-               with_digital: bool = False) -> Axes:
+                     ax: Axes,
+                     with_digital: bool = False) -> Axes:
     """
     Draw the rasterplot of an experiment phase
     @param [in] phase
@@ -92,6 +92,22 @@ def rasterplot_phase(phase: Phase,
         # time where stimulus where active
         ax.add_collection(patches)
     ax.eventplot(spikes)  # , orientation='horizontal')
+    return ax
+
+
+def plot_signal_with_spikes(signal: np.ndarray,
+                            events: np.ndarray,
+                            ax: Axes,) -> Axes:
+    """Draw the given signal and a symbol where the events are releaved.
+    The user must ensure that the abscissa of the signal and the events
+    are coherent.
+    @param [in] signal
+    @param [in] events
+    @param [in] ax: the Axes where to draw the plot
+    @returns the same ax passed as argument
+    """
+    ax.plot(signal)
+    ax.plot(events, '*')
     return ax
 
 

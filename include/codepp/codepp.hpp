@@ -1,5 +1,4 @@
 #pragma once
-
 #include <prelude.hpp>
 
 namespace CodePP {

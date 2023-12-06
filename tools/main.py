@@ -12,7 +12,8 @@ from PySide6.QtCore import QDir, Qt, QUrl  # type: ignore
 from PySide6.QtGui import (QImage, QPixmap, QStandardItem,  # type: ignore
                            QStandardItemModel)
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer  # type: ignore
-from PySide6.QtWidgets import (QApplication, QDialog,  # type: ignore
+from PySide6.QtWidgets import (QApplication, QCheckBox,
+                               QDialog,  # type: ignore
                                QFileSystemModel, QGroupBox, QLabel,
                                QPushButton, QSplitter, QTextBrowser, QTreeView,
                                QVBoxLayout, QWidget)
@@ -250,17 +251,24 @@ class Controls(QWidget):
         plots_layout = QVBoxLayout()
         plots_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.btn_plot_signal = QPushButton("Plot Signal")
-        plots_layout.addWidget(self.btn_plot_signal)
-        self.btn_plot_signal.clicked.connect(
-            # lambda _: Process(target=plot_signal, args=(CURRENT_PATH, SIGNAL_INDEXES)).start())
-            lambda _: plot_signal_raw(
-                STORED_H5[CURRENT_PATH].analogs[SIGNAL_INDEXES[0]].parse_signal(SIGNAL_INDEXES[1])))
-
         self.btn_rasterplot = QPushButton("Rasterplot")
         plots_layout.addWidget(self.btn_rasterplot)
         self.btn_rasterplot.clicked.connect(
             lambda _: Process(target=rasterplot, args=(CURRENT_PATH, )).start())
+
+        signals_group = QGroupBox(title="Signals")
+        signals_layout = QVBoxLayout()
+        signals_group.setLayout(signals_layout)
+        self.btn_plot_signal = QPushButton("Plot Signal")
+        self.btn_plot_signal.clicked.connect(
+            lambda _: plot_signal_raw(
+                STORED_H5[CURRENT_PATH].analogs[SIGNAL_INDEXES[0]].parse_signal(SIGNAL_INDEXES[1])))
+        signals_layout.addWidget(self.btn_plot_signal)
+
+        self.plot_events_in_signal = QCheckBox(text="Include events")
+        signals_layout.addWidget(self.plot_events_in_signal)
+
+        plots_layout.addWidget(signals_group)
 
         plots_group.setLayout(plots_layout)
 
@@ -275,7 +283,7 @@ class Controls(QWidget):
         self.btn_rasterplot.setEnabled(value)
 
     def enable_controls_signal(self, value: bool, indexes=None):
-        self.btn_plot_signal.setEnabled(value)
+        self.setEnabled(value)
         global SIGNAL_INDEXES
         SIGNAL_INDEXES = indexes
 

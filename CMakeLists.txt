@@ -26,7 +26,7 @@ FetchContent_MakeAvailable(fmt)
 
 set(SOURCES
   hdf5.cpp
-  python.cpp
+#  python.cpp
   )
 list(TRANSFORM SOURCES PREPEND "src/")
 
