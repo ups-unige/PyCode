@@ -48,8 +48,11 @@ def plot_signal(path: Path, indexes: Tuple[int, int]):
     plt.show()
 
 
-def plot_signal_raw(data: np.ndarray):
+def plot_signal_raw(data: np.ndarray, events: np.ndarray):
     plt.plot(data)
+    data_mean = np.mean(data)
+    if events is not None:
+        plt.plot(events, 2*data_mean*np.ones(shape=events.shape), '*')
     plt.show()
 
 
@@ -102,10 +105,12 @@ class FileTree(QWidget):
                 else:
                     file = CURRENT_PATH
                     info_h5 = self.InfoH5(
-                        file.name, f'{ "%.2f" % (getsize(file) / 1024 / 1024) } MB', datetime.fromtimestamp(getctime(file)).strftime('%Y-%m-%d %H:%M:%S'))
+                        file.name, f'{"%.2f" % (getsize(file) / 1024 / 1024)}'
+                        ' MB', datetime.fromtimestamp(getctime(file))
+                        .strftime('%Y-%m-%d %H:%M:%S'))
                     ROOT.controls.enable_controls_phase(True)
                     ROOT.viewer.set_h5_info(info_h5=info_h5)
-                ROOT.controls.enable_controls_signal(False)
+                ROOT.controls.enable_controls_signal(False, False)
 
         tree = QTreeView()
         tree.selectionChanged = file_selection_changed
@@ -160,11 +165,19 @@ class Viewer(QWidget):
         if selection is not None:
             data = MODEL.itemFromIndex(selection.indexes()[0]).data()
             if data is not None:
-                ROOT.controls.enable_controls_signal(True, indexes=data)
+                currenth5 = STORED_H5[CURRENT_PATH]
+                channel_stream = data[0]
+                channel_label = data[2]
+                channel_events = currenth5.get_events(
+                    channel_stream, channel_label)
+                ROOT.controls.enable_controls_signal(
+                    True,
+                    channel_events is not None,
+                    indexes=data)
             else:
-                ROOT.controls.enable_controls_signal(False)
+                ROOT.controls.enable_controls_signal(False, False)
         else:
-            ROOT.controls.enable_controls_signal(False)
+            ROOT.controls.enable_controls_signal(False, False)
 
     def set_h5_info(self, info_h5: Optional[FileTree] = None, is_dir=False):
         if is_dir:
@@ -210,9 +223,12 @@ Creation date:  {info_h5.date}
             sorted_channels = sorted(
                 analog.info_channels, key=lambda x: int(x.label))
             for j, channel in enumerate(sorted_channels):
-                # actual index of the relative channeldata is at channel.channel_id
+                # actual index of the relative channeldata is at
+                # channel.channel_id
                 channel_item = QStandardItem(f"Channel {int(channel.label)}")
-                channel_item.setData((i, int(channel.channel_id)))
+                channel_item.setData((i,
+                                      int(channel.channel_id),
+                                      int(channel.label)))
                 channel_item.setEditable(False)
                 analog_item.appendRow(channel_item)
 
@@ -254,7 +270,8 @@ class Controls(QWidget):
         self.btn_rasterplot = QPushButton("Rasterplot")
         plots_layout.addWidget(self.btn_rasterplot)
         self.btn_rasterplot.clicked.connect(
-            lambda _: Process(target=rasterplot, args=(CURRENT_PATH, )).start())
+            lambda _: Process(target=rasterplot,
+                              args=(CURRENT_PATH, )).start())
 
         signals_group = QGroupBox(title="Signals")
         signals_layout = QVBoxLayout()
@@ -262,7 +279,10 @@ class Controls(QWidget):
         self.btn_plot_signal = QPushButton("Plot Signal")
         self.btn_plot_signal.clicked.connect(
             lambda _: plot_signal_raw(
-                STORED_H5[CURRENT_PATH].analogs[SIGNAL_INDEXES[0]].parse_signal(SIGNAL_INDEXES[1])))
+                STORED_H5[CURRENT_PATH].analogs[SIGNAL_INDEXES[0]]
+                .parse_signal(SIGNAL_INDEXES[2]),
+                STORED_H5[CURRENT_PATH].get_events(SIGNAL_INDEXES[0],
+                                                   SIGNAL_INDEXES[2])))
         signals_layout.addWidget(self.btn_plot_signal)
 
         self.plot_events_in_signal = QCheckBox(text="Include events")
@@ -276,16 +296,19 @@ class Controls(QWidget):
 
         self.setLayout(layout)
         self.enable_controls_phase(False)
+        self.enable_controls_signal(False, False)
 
     def enable_controls_phase(self, value: bool):
         self.btn_content.setEnabled(value)
         self.btn_tree.setEnabled(value)
         self.btn_rasterplot.setEnabled(value)
 
-    def enable_controls_signal(self, value: bool, indexes=None):
-        self.setEnabled(value)
+    def enable_controls_signal(self, value_signal: bool, value_events: bool,
+                               indexes=None):
+        self.btn_plot_signal.setEnabled(value_signal)
+        self.plot_events_in_signal.setEnabled(value_events)
         global SIGNAL_INDEXES
-        SIGNAL_INDEXES = indexes
+        SIGNAL_INDEXES = indexes[:] if indexes is not None else None
 
 
 ###############################################################################

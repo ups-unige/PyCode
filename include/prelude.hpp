@@ -7,17 +7,17 @@ using std::array;
 using std::vector;
 
 #include <utility>
+using std::declval;
 using std::pair;
 using std::tuple;
-using std::declval;
 
 #include <string>
 using std::string;
 
 #include <iostream>
-using std::cout;
-using std::cin;
 using std::cerr;
+using std::cin;
+using std::cout;
 using std::endl;
 
 #include <functional>
@@ -25,8 +25,8 @@ using std::function;
 
 #include <memory>
 using std::move;
-using std::unique_ptr;
 using std::shared_ptr;
+using std::unique_ptr;
 using std::weak_ptr;
 
 #if __cplusplus >= 202002L
@@ -41,3 +41,13 @@ using std::variant;
 #endif
 
 #include <fmt/format.h>
+
+template <typename T>
+[[nodiscard]] auto expect(optional<T> opt, const string &message) -> T && {
+  if (opt.has_value())
+    return std::move(opt.value());
+  else {
+    fmt::println("{}", message);
+    exit(1);
+  }
+}

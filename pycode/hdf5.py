@@ -50,6 +50,7 @@ class AnalogStream:
     def __init__(self, base_group: Group, key: str):
         self.name = key
         stream_group = base_group[key]
+        self.label_dict: Dict[int, int] = {}
         try:
             self.length = stream_group['InfoChannel'].shape[0]
             self.info_channels: List[InfoChannel] = []
@@ -57,28 +58,31 @@ class AnalogStream:
                 self.info_channels.append(
                     InfoChannel(stream_group['InfoChannel'][i]))
             self.data_channels = stream_group['ChannelData']
+            for info_channel in self.info_channels:
+                self.label_dict[int(info_channel.label)] = int(
+                    info_channel.channel_id)
         except Exception as e:
             print(
                 f'ERROR: AnalogStream __init__, {key} could be corrupted',
                 e.args)
 
-    def quick_info_list(self, index: int) -> Dict[str, str]:
-        info_channel = self.info_channels[index]
+    def quick_info_list(self, label: int) -> Dict[str, str]:
+        info_channel = self.info_channels[self.label_dict[label]]
         return {
             'index': str(info_channel.channel_id),
             'label': str(info_channel.label),
         }
 
-    def parse_signal(self, index: int) -> np.ndarray:
-        print(self.info_channels)
+    def parse_signal(self, label: int) -> np.ndarray:
+        index = self.label_dict[label]
         info_channel = self.info_channels[index]
         offset = info_channel.adc_offset
         conversion_factor = info_channel.conversion_factor
         exponent = info_channel.exponent
         mantissas = np.expand_dims(self.data_channels[index][:], 1)
 
-        converted_data = (mantissas - np.ones(shape=mantissas.shape) * offset) *\
-            conversion_factor * np.power(10., exponent)
+        converted_data = (mantissas - np.ones(shape=mantissas.shape) *
+                          offset) * conversion_factor * np.power(10., exponent)
 
         return converted_data
 
@@ -114,18 +118,30 @@ source label:       {self.source_label}
 class TimeStampStream:
     def __init__(self, base_group: Group, key: str):
         self.name = key
-        stream_group = base_group[key]
+        self.stream_group = base_group[key]
+        self.label_dict: Dict[int, int] = {}
         try:
-            info_time_stamps = stream_group['InfoTimeStamp']
+            info_time_stamps = self.stream_group['InfoTimeStamp']
             self.info_time_stamps = []
             self.length = info_time_stamps.shape[0]
             for i in range(self.length):
                 self.info_time_stamps.append(
                     InfoTimeStamp(info_time_stamps[i]))
+            for i in range(self.length):
+                self.label_dict[int(self.info_time_stamps[i].source_label)] = \
+                    int(self.info_time_stamps[i].channel_id)
+
         except Exception as e:
             print(
                 f'ERROR: TimeStampStream __init__, {key} could be corrupted',
                 e.args)
+
+    def get_channel_events(self, channel_label: int) -> Optional[np.ndarray]:
+        channel_id = self.label_dict.get(channel_label)
+        if channel_id is not None:
+            return self.stream_group[f'TimeStampEntity_{channel_id}'][0, :]
+        else:
+            return None
 
     def quick_info_list(self, index: int) -> Dict[str, str]:
         info_time_stamp = self.info_time_stamps[index]
@@ -185,6 +201,16 @@ class H5Content:
             print(
                 f'ERROR: H5Contnt __init__, {filepath} is maybe corrupted',
                 e.args)
+
+    def get_events(self, stream: int, channel_label: int,
+                   ) -> Optional[np.ndarray]:
+        if self.time_stamps is not None:
+            return (self.time_stamps[0].get_channel_events(channel_label) /
+                    self.analogs[stream]
+                    .info_channels[self.analogs[stream]
+                                   .label_dict[channel_label]].tick)
+        else:
+            return None
 
     def __str__(self):
         return f'''

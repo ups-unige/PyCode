@@ -16,17 +16,14 @@
 ################################################################################
 
 # Check if a directory exists and create it if not. Then pop its location
-function Script:check_n_pop_directory([String]$name)
-{
+function Script:check_n_pop_directory([String]$name) {
   New-Item -Type Directory -Path $name -ErrorAction Ignore
   Push-Location $name
 }
 
 # Run a python command with the build python interpreter
-function Script:PythonCommand([String]$command)
-{
-  if (-not (Get-Item -Path "build/python39._pth" -ErrorAction SilentlyContinue))
-  {
+function Script:PythonCommand([String]$command) {
+  if (-not (Get-Item -Path "build/python39._pth" -ErrorAction SilentlyContinue)) {
     DownloadPython "3.9.0" "amd64" 
   }
   $actual_command = "build/python "
@@ -38,17 +35,15 @@ function Script:PythonCommand([String]$command)
 
 # This function permit to avoid adding the conda initialization on the default
 # script that starts with the shell saving a slowdown on each shells start
-function Script:ActivateConda()
-{
-  if ( $IsWindows )
-  {
+function Script:ActivateConda() {
+  if ( $IsWindows ) {
     conda shell.powershell hook | Out-String | Invoke-Expression
-  } elseif ( $IsLinux )
-  {
+  }
+  elseif ( $IsLinux ) {
     Write-Information "TODO"
     return
-  } else
-  {
+  }
+  else {
     Write-Information "TODO"
     return
   }
@@ -60,8 +55,7 @@ function Script:ActivateConda()
   conda activate "./devel/conda"
 }
 
-function Script:Heading
-{
+function Script:Heading {
   Write-Host @"
 
 ********************************************************************************
@@ -83,8 +77,7 @@ The requirements for using this script are:
 "@
 }
 
-function Script:Help
-{
+function Script:Help {
   Write-Host @"
 
 USAGE:
@@ -111,9 +104,8 @@ help                                   |  print this help
 # Download and install an embeddable python distribution in the build folder
 # to be used for the embedded python interpreter in CodePP. Also installs pip
 # so that the required libraries could be installed
-function Script:DownloadPython([string]$python_version, [string]$os_version)
-{
-  $python_url=  "https://www.python.org/ftp/python/$python_version/python-$python_version-embed-$os_version.zip"
+function Script:DownloadPython([string]$python_version, [string]$os_version) {
+  $python_url = "https://www.python.org/ftp/python/$python_version/python-$python_version-embed-$os_version.zip"
   Invoke-WebRequest -Uri $python_url -OutFile python.zip
   Expand-Archive -path python.zip -DestinationPath "build" -Force
   Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile build/get-pip.py
@@ -122,20 +114,15 @@ function Script:DownloadPython([string]$python_version, [string]$os_version)
 }
 
 # Installation of the Qt6 framework locally in the development environment
-function Script:InstallQt([string]$qt_installer_version, [string]$os_version)
-{
-  switch ($os_version)
-  {
-    "windows"
-    {
+function Script:InstallQt([string]$qt_installer_version, [string]$os_version) {
+  switch ($os_version) {
+    "windows" {
       $qt_installer_suffix = "exe"
     }
-    "linux"
-    {
+    "linux" {
       $qt_installer_suffix = "run"
     }
-    "macos"
-    {
+    "macos" {
       $qt_installer_suffix = "dmg"
     }
   }
@@ -148,13 +135,12 @@ function Script:InstallQt([string]$qt_installer_version, [string]$os_version)
 #                               INIT ENVIRONMENTS
 ################################################################################
 # this will get conan to install binaries and artifacts locally
-$env:CONAN_HOME="$((Get-Location).Path)/devel/conan"
+$env:CONAN_HOME = "$((Get-Location).Path)/devel/conan"
 # i don't remember this one. maybe it's used by poetry to compile wheels with 
 # mingw_w64
-$env:SETUPTOOLS_USE_DISTUTILS="stdlib"
+$env:SETUPTOOLS_USE_DISTUTILS = "stdlib"
 
-function Script:InitConan
-{
+function Script:InitConan {
   ActivateConda
   conan profile detect --force
   conan install . --output-folder=build --build=missing -s compiler.cppstd=20 -s build_type=Debug
@@ -164,41 +150,34 @@ function Script:InitConan
 # - conan: to get the c++ libraries and dependencies
 # - python embeddable: to let the interpreter being included in CodePP
 # - poetry: to build the PyCode distribution package
-function Script:Init
-{
+function Script:Init {
   $conda = (Get-Command conda -ErrorAction SilentlyContinue)  
-  if ($null -eq $conda)
-  {
+  if ($null -eq $conda) {
     Write-Error "conda is not installed or available in PATH. install it first."
     return
-  } else
-  {
+  }
+  else {
     $arguments = $args[0] -split " "
 
-      foreach ($arg in $arguments)
-      {
-        if ($arg -match "-*$")
-        {
-          if ($arg -eq "-All")
-          {
-            DevelClean
-            ActivateConda
-            DownloadPython "3.9.0" "amd64" 
-          }
+    foreach ($arg in $arguments) {
+      if ($arg -match "-*$") {
+        if ($arg -eq "-All") {
+          DevelClean
+          ActivateConda
+          DownloadPython "3.9.0" "amd64" 
+        }
 
-          if ($arg -eq "-Conan")
-          {
-            ActivateConda
-            InitConan
-          }
+        if ($arg -eq "-Conan") {
+          ActivateConda
+          InitConan
+        }
 
-          if ($arg -eq "-PyCode")
-          {
-            ActivateConda
-            poetry build
-          }
+        if ($arg -eq "-PyCode") {
+          ActivateConda
+          poetry build
         }
       }
+    }
   }
 }
 
@@ -213,128 +192,105 @@ function Script:Init
 ################################## CLEAN ######################################
 
 # Clean the development environment
-function Script:DevelClean
-{
+function Script:DevelClean {
   Remove-Item -Force -Recurse -Path "./devel" -ErrorAction Ignore
 }
 
-function Script:BuildClean
-{
+function Script:BuildClean {
   Remove-Item -Force -Recurse -Path "./build" -ErrorAction Ignore
 }
 
-function Script:PoetryClean
-{
+function Script:PoetryClean {
   Remove-Item -Path ".venv" -Force -ErrorAction Ignore -Recurse
   Remove-Item -Path "dist" -Force -ErrorAction Ignore -Recurse
 }
 
-function Script:Clean 
-{
- $arguments = $args[0] -split " "
+function Script:Clean {
+  $arguments = $args[0] -split " "
 
-   foreach ($arg in $arguments)
-   {
-     if ($arg -match "-*$")
-     {
-       if ($arg -eq "-All")
-       {
-         DevelClean
-         BuildClean
-         PoetryClean
-         return
-       }
+  foreach ($arg in $arguments) {
+    if ($arg -match "-*$") {
+      if ($arg -eq "-All") {
+        DevelClean
+        BuildClean
+        PoetryClean
+        return
+      }
 
-       if ($arg -eq "-Devel")
-       {
-         DevelClean
-       }
+      if ($arg -eq "-Devel") {
+        DevelClean
+      }
 
-       if ($arg -eq "-Build")
-       {
-         BuildClean
-       }
+      if ($arg -eq "-Build") {
+        BuildClean
+      }
 
-       if ($arg -eq "-Poetry")
-       {
-         PoetryClean
-       }
-     }
-   }
+      if ($arg -eq "-Poetry") {
+        PoetryClean
+      }
+    }
+  }
 }
 
 ################################## BUILD ######################################
 
-function Script:BuildPyCode
-{
+function Script:BuildPyCode {
   poetry build
   PythonCommand "-m pip uninstall --yes pycode"
   PythonCommand "-m pip install -q ./dist/pycode-0.1.0-py3-none-any.whl"
 }
 
-function Script:BuildCodePP
-{
+function Script:BuildCodePP {
+  conan profile detect --force
+  conan install . --output-folder=build --build=missing -s compiler.cppstd=20 -s build_type=Debug
   Script:check_n_pop_directory("build")
-         conan profile detect --force
-         conan install . --output-folder=build --build=missing -s compiler.cppstd=20 -s build_type=Debug -s cmake_generator=Ninja
-         cmake -G"Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $arg_list ..
-         cmake --build .
-         Pop-Location
+  cmake -G"Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $arg_list ..
+  cmake --build .
+  Pop-Location
 }
 
-function Script:Build
-{
+function Script:Build {
   ActivateConda
 
-    $arguments = $args[0] -split " "
+  $arguments = $args[0] -split " "
 
-    foreach ($arg in $arguments)
-    {
-      if ($arg -match "-*$")
-      {
-        if ($arg -eq "-All")
-        {
-          BuildPyCode
-            BuildCodePP
-            return
-        }
+  foreach ($arg in $arguments) {
+    if ($arg -match "-*$") {
+      if ($arg -eq "-All") {
+        BuildPyCode
+        BuildCodePP
+        return
+      }
 
-        if ($arg -eq "-Pycode")
-        {
-          BuildPyCode
-        }
+      if ($arg -eq "-Pycode") {
+        BuildPyCode
+      }
 
-        if ($arg -eq "-CodePP")
-        {
-          BuildCodePP
-        }
+      if ($arg -eq "-CodePP") {
+        BuildCodePP
       }
     }
+  }
 }
 
 #################################### RUN #######################################
 
-function Script:Run
-{
-    $arguments = $args[0] -split " "
+function Script:Run {
+  $arguments = $args[0] -split " "
 
-    foreach ($arg in $arguments)
-    {
-      if ($arg -match "-*$")
-      {
-        if ($arg -eq "-Pycode")
-        {
-          PythonCommand "tools/main.py"
-        }
-        elseif ($arg -eq "-CodePP")
-        {
-          check_n_pop_directory("build")
-            $command = './' + $project
-            Invoke-Expression $command
-            Pop-Location
-        }
+  foreach ($arg in $arguments) {
+    if ($arg -match "-*$") {
+      if ($arg -eq "-Pycode") {
+        PythonCommand "tools/main.py"
+      }
+      elseif ($arg -eq "-CodePP") {
+        check_n_pop_directory("build")
+        $command = './' + $project
+        Invoke-Expression $command
+        Pop-Location
       }
     }
+  }
 }
 
 ################################################################################
@@ -345,56 +301,46 @@ $ErrorActionPreference = 'Stop'
 # $this_dir = (Get-Location).Path
 $project = Split-Path -Path (Get-Location) -Leaf
 # modify the following variable to point to the qt6 install folder
-$env:Qt6_ROOT="D:\Qt\6.6.0\mingw_64\"
+$env:Qt6_ROOT = "D:\Qt\6.6.0\mingw_64\"
 
-try
-{
-  switch($args[0])
-  {
+try {
+  switch ($args[0]) {
 
-    "help"
-    {
+    "help" {
       Help
     }
 
-    "init"
-    {
+    "init" {
       Init $args[1..($args.Length)]
     }
 
-    "build"
-    {
+    "build" {
       Build $args[1..($args.Length)]
     }
 
-    "run"
-    {
+    "run" {
       Run $args[1..($args.Length)]
     }
 
-    "qt"
-    {
+    "qt" {
       InstallQt "4.6.1" "windows"
     }
 
-    "clean"
-    {
+    "clean" {
       Clean $args[1..($args.Length)]
     }
 
-    "tui"
-    {
+    "tui" {
       PythonCommand "tools/tui.py"
     }
 
-    default
-    {
+    default {
       Heading
-        Help
+      Help
     }
   }
-} catch
-{
+}
+catch {
   Write-Output $_
-    Pop-Location
+  Pop-Location
 }
