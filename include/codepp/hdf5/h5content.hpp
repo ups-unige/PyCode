@@ -25,7 +25,7 @@ namespace CodePP::HDF5 {
 /// then the raw recording) is not guaranteed.
 class H5Content {
 public:
-  static auto Open(string filename) -> optional<H5Content>;
+  static auto Open(string filename) -> Result<H5Content>;
   ~H5Content();
   H5Content(H5Content &&moved);
   auto operator=(H5Content &&moved) -> H5Content;
@@ -35,11 +35,11 @@ public:
 
   [[nodiscard]] auto get_tree() const -> string;
 
+  vector<H5Analog> analogs;
 private:
   H5Content(hid_t file_id, hid_t base_group_id);
   bool moved = false;
 
-  vector<H5Analog> analogs;
   hid_t file_id;
   hid_t base_group_id;
 };

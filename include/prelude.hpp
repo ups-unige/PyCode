@@ -38,10 +38,8 @@ using std::optional, std::nullopt;
 
 #include <variant>
 using std::variant;
-#endif
 
 #include <fmt/format.h>
-
 template <typename T>
 [[nodiscard]] auto expect(optional<T> opt, const string &message) -> T && {
   if (opt.has_value())
@@ -51,3 +49,19 @@ template <typename T>
     exit(1);
   }
 }
+
+struct Error {
+  string message;
+};
+
+template <typename T> using Result = variant<T, Error>;
+
+template <typename T> [[nodiscard]] auto unwrap(Result<T> value) -> T {
+  if (value.index() == 0)
+    return std::move(std::get<T>(value));
+  else {
+    fmt::println("RESULT ERROR: {}", std::move(std::get<Error>(value).message));
+    exit(1);
+  }
+}
+#endif

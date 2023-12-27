@@ -1,6 +1,6 @@
+#include <H5Tpublic.h>
 #include <codepp/hdf5/h5utils.hpp>
 #include <hdf5/hdf5.h>
-
 
 namespace CodePP::HDF5 {
 
@@ -64,7 +64,6 @@ auto get_object_path(hid_t object, string &&path) -> optional<string> {
 /// @param [in] group_id
 /// @returns a string with a list of the names of the linked objects
 [[nodiscard]] auto get_group_objects(hid_t group_id) -> string {
-
   string ret;
 
   H5Literate(
@@ -79,6 +78,28 @@ auto get_object_path(hid_t object, string &&path) -> optional<string> {
       &ret);
 
   return ret;
+}
+
+/// get_type_name(hid_t type_id) -> string
+/// get the name of an hdf5 type from its id
+///
+/// @param [in] type_id
+/// @returns a string with the type name
+auto get_type_name(hid_t type_id) -> string {
+  switch (H5Tget_class(type_id)) {
+  case H5T_FLOAT:
+    return "Float";
+  case H5T_INTEGER:
+    return "Integer";
+  case H5T_ARRAY:
+    return "Array";
+  case H5T_STRING:
+    return "String";
+  case H5T_COMPOUND:
+    return "Compound";
+  default:
+    return "Unkown";
+  }
 }
 
 } // namespace CodePP::HDF5

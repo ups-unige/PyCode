@@ -35,6 +35,7 @@ FetchContent_MakeAvailable(fmt)
 
 set(SOURCES
     "src/codepp/hdf5/h5utils.cpp" "include/codepp/hdf5/h5utils.hpp"
+    "src/codepp/hdf5/type_inspector.cpp" "include/codepp/hdf5/type_inspector.hpp"
     "src/codepp/hdf5/h5analog.cpp" "include/codepp/hdf5/h5analog.hpp"
     "src/codepp/hdf5/h5content.cpp" "include/codepp/hdf5/h5content.hpp")
 
