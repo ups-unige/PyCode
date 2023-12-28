@@ -1,5 +1,6 @@
 #pragma once
 #include <codepp/hdf5/h5utils.hpp>
+#include <codepp/types/signal.hpp>
 #include <prelude.hpp>
 
 namespace CodePP::HDF5 {
@@ -101,7 +102,7 @@ public:
   auto operator=(const H5Analog &other) = delete;
 
   [[nodiscard]] auto info() const -> string;
-  [[nodiscard]] auto operator[](const string& label) -> Result<vector<float>>;
+  [[nodiscard]] auto operator[](const string& label) -> Result<Signal<float>>;
 
 private:
   bool moved = false;

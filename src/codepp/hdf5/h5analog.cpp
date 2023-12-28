@@ -1,6 +1,8 @@
 // #include "codepp/hdf5/type_inspector.hpp"
 #include "codepp/hdf5/h5utils.hpp"
 #include "prelude.hpp"
+#include <H5Ppublic.h>
+#include <H5Tpublic.h>
 #include <codepp/hdf5/h5analog.hpp>
 #include <hdf5/hdf5.h>
 
@@ -144,14 +146,64 @@ H5Analog::~H5Analog() {
   }
 }
 
-auto H5Analog::operator[](const string &label) -> Result<vector<float>> {
+auto H5Analog::operator[](const string &label) -> Result<Signal<float>> {
   if (not labels_dict.contains(label))
     return Error{
         fmt::format("H5Analog Operator[]: not a valid label {}", label)};
   else {
+    // retrieve the info_channel of the choosen label
     auto index = labels_dict[label];
-    cout << info_channels[index].info() << endl;
-    return {};
+
+    auto channel_data_index =
+        info_channels[index]
+            .row_index; // index of the data in the ChannelData dataset
+
+    // getting the conversion parameters
+    auto ad_zero = info_channels[index].ad_zero;
+    auto conversion_factor = info_channels[index].conversion_factor;
+    auto exponent = info_channels[index].exponent;
+    float conversion_factorf = static_cast<float>(conversion_factor) *
+                               static_cast<float>(std::pow(10, exponent));
+
+    // get the DataChannel dataspace and its dimensions
+    //
+    auto data_channel_dataspace_id = H5Dget_space(channel_data);
+    auto n_dims = H5Sget_simple_extent_ndims(data_channel_dataspace_id);
+    vector<size_t> dims(n_dims);
+    H5Sget_simple_extent_dims(data_channel_dataspace_id, dims.data(), nullptr);
+
+    if (dims.size() != 2 and dims[0] != n_channels)
+      return Error{fmt::format(
+          "H5Analog operator[] error in querying {} label data", label)};
+
+    // get the selection of the dataspace for the choosen label
+    array<size_t, 1> memory_size_array{dims[1]};
+    [[maybe_unused]] auto memory_dataspace =
+        H5Screate_simple(1, memory_size_array.data(), nullptr);
+
+    array<size_t, 2> storage_slab_start{static_cast<size_t>(channel_data_index),
+                                        0};
+    array<size_t, 2> storage_slab_count{1, dims[1]};
+    H5Sselect_hyperslab(data_channel_dataspace_id, H5S_SELECT_SET,
+                        storage_slab_start.data(), nullptr,
+                        storage_slab_count.data(), nullptr);
+    vector<int> data(dims[1]);
+    // read its value
+    H5Dread(channel_data, H5T_NATIVE_INT, memory_dataspace,
+            data_channel_dataspace_id, H5P_DEFAULT, data.data());
+
+    // build the return value
+    Signal<float> ret;
+    ret.data.resize(dims[1]);
+
+    // subtract the offset and multiply the data for the conversion factor
+    for (size_t i = 0; i < dims[1]; ++i) {
+      ret.data[i] = (data[i] - ad_zero) * conversion_factorf;
+    }
+
+    // compute the sampling frequency
+    ret.sampling_frequency = 1e6 / info_channels[index].tick;
+    return ret;
   }
 }
 

@@ -34,6 +34,7 @@ FetchContent_MakeAvailable(fmt)
 # CodePP
 
 set(SOURCES
+    "src/codepp/types/signal.cpp" "include/codepp/types/signal.hpp"
     "src/codepp/hdf5/h5utils.cpp" "include/codepp/hdf5/h5utils.hpp"
     "src/codepp/hdf5/type_inspector.cpp" "include/codepp/hdf5/type_inspector.hpp"
     "src/codepp/hdf5/h5analog.cpp" "include/codepp/hdf5/h5analog.hpp"
